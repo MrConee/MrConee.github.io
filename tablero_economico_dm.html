@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tablero Económico DM - Casa de Naipes</title>
+    <!-- Incluimos html2pdf desde CDN para la exportación a PDF directa -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root {
+            --bg-base: #070a11;
+            --surface: #0f172a;
+            --surface-hover: #1e293b;
+            --surface-active: #273548;
+            --border: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --gold: #f59e0b;
+            --gold-glow: rgba(245, 158, 11, 0.2);
+            --success: #10b981;
+            --success-hover: #059669;
+            --success-bg: rgba(16, 185, 129, 0.12);
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+            --danger-bg: rgba(239, 68, 68, 0.12);
+            --info: #3b82f6;
+            --radius: 12px;
+            --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-base);
+            background-image:
+                radial-gradient(circle at 15% 0%, rgba(245, 158, 11, 0.06), transparent 40%),
+                radial-gradient(circle at 100% 100%, rgba(59, 130, 246, 0.05), transparent 45%);
+            background-attachment: fixed;
+            color: var(--text-main);
+            margin: 0;
+            padding: 24px;
+            line-height: 1.5;
+        }
+
+        *:focus-visible {
+            outline: 2px solid var(--gold);
+            outline-offset: 2px;
+            border-radius: 4px;
+        }
+
+        .app-container {
+            max-width: 1440px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 24px;
+            align-items: start;
+        }
+
+        .sticky-col {
+            position: sticky;
+            top: 24px;
+        }
+
+        @media (max-width: 1100px) {
+            .app-container { grid-template-columns: 1fr; }
+            .sticky-col { position: static; }
+        }
+
+        /* Paneles de Control y Tarjetas */
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        h1, h2, h3 { color: var(--gold); margin-top: 0; font-weight: 600; letter-spacing: -0.025em; }
+        h1 { font-size: 1.35rem; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+        h2 { font-size: 1.05rem; border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 12px; }
+        h3 { font-size: 0.95rem; }
+
+        .helper-text { font-size: 0.825rem; color: var(--text-muted); margin-bottom: 16px; }
+
+        /* Controles de Formulario UX */
+        .input-group {
+            margin-bottom: 14px;
+        }
+        .input-group label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 10px 12px;
+            background: #0b1120;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            border-radius: 8px;
+            font-size: 0.925rem;
+            transition: var(--transition);
+            font-family: inherit;
+        }
+        .input-group input:hover, .input-group select:hover {
+            border-color: #475569;
+        }
+        .input-group input:focus, .input-group select:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px var(--gold-glow);
+            background: #070a11;
+        }
+        .input-group .field-hint {
+            font-size: 0.72rem;
+            color: #64748b;
+            margin-top: 4px;
+        }
+
+        .row-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        /* Botones de Acción Estilizados */
+        .btn {
+            background-color: var(--gold);
+            color: #070a11;
+            border: none;
+            padding: 10px 16px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+        }
+        .btn:hover { background-color: #fbbf24; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(245, 158, 11, 0.3); }
+        .btn:active { transform: translateY(0); }
+        .btn-success { background-color: var(--success); color: white; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2); }
+        .btn-success:hover { background-color: var(--success-hover); box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3); }
+
+        .btn-pdf {
+            background-color: var(--info);
+            color: white;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+        }
+        .btn-pdf:hover {
+            background-color: #2563eb;
+            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+            box-shadow: none;
+        }
+        .btn-outline:hover {
+            background: var(--surface-hover);
+            color: var(--text-main);
+            border-color: #475569;
+            transform: none;
+            box-shadow: none;
+        }
+        .btn-danger-outline {
+            background: transparent;
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            box-shadow: none;
+        }
+        .btn-danger-outline:hover {
+            background: var(--danger-bg);
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 4px;
+        }
+        .btn-stack { margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px; }
+
+        /* Dashboard de Métricas Rápidas (HUD) */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+        .metric-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px;
+            position: relative;
+            overflow: hidden;
+            transition: var(--transition);
+        }
+        .metric-card:hover {
+            border-color: #475569;
+            transform: translateY(-2px);
+        }
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 4px; height: 100%;
+            background: var(--accent-bar, var(--gold));
+        }
+        .metric-card h4 { margin: 0 0 6px 0; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+        .metric-value { font-size: 1.2rem; font-weight: 700; color: var(--text-main); }
+        .metric-badge {
+            display: inline-block;
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-top: 4px;
+            padding: 3px 10px;
+            border-radius: 20px;
+        }
+        .badge-ok { background: var(--success-bg); color: var(--success); }
+        .badge-warn { background: rgba(245, 158, 11, 0.12); color: var(--gold); }
+        .badge-bad { background: var(--danger-bg); color: var(--danger); }
+
+        .factor-breakdown {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 10px;
+        }
+        .factor-row {
+            display: grid;
+            grid-template-columns: 90px 1fr 28px;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.72rem;
+            color: var(--text-muted);
+        }
+        .factor-bar-track {
+            background: #0b1120;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            height: 8px;
+            overflow: hidden;
+        }
+        .factor-bar-fill {
+            height: 100%;
+            background: var(--gold);
+            border-radius: 6px;
+            transition: width 0.3s ease;
+        }
+
+        .metric-sublist { list-style: none; padding: 0; margin: 0; font-size: 0.875rem; }
+        .metric-sublist li { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed rgba(255,255,255,0.06); }
+        .metric-sublist li:last-child { border-bottom: none; }
+        .metric-sublist span { color: var(--text-muted); }
+        .metric-sublist strong { color: var(--text-main); font-variant-numeric: tabular-nums; }
+
+        /* Tablas Optimizadas */
+        .table-responsive { overflow-x: auto; margin-top: 4px; border-radius: 8px; border: 1px solid var(--border); }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+            white-space: nowrap;
+        }
+        th, td {
+            padding: 10px 14px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        th {
+            background-color: #162032;
+            color: var(--gold);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+            position: sticky;
+            top: 0;
+        }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background-color: var(--surface-hover); }
+        table input {
+            background: #070a11 !important;
+            border: 1px solid var(--border) !important;
+            color: white !important;
+            padding: 6px 8px !important;
+            border-radius: 6px !important;
+            width: 100% !important;
+            font-size: 0.85rem !important;
+        }
+        .empty-row td {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 24px;
+            font-style: italic;
+        }
+
+        .guide-box {
+            background: rgba(245, 158, 11, 0.04);
+            border-left: 3px solid var(--gold);
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            border-radius: 0 6px 6px 0;
+            font-size: 0.8rem;
+            color: #cbd5e1;
+        }
+        .guide-box:last-child { margin-bottom: 0; }
+        .guide-box b { color: var(--gold); }
+
+        .filter-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .filter-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .filter-controls select {
+            padding: 8px 10px;
+            background: #0b1120;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            min-width: 180px;
+        }
+
+        .converter-grid {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 10px;
+            align-items: end;
+        }
+        .converter-swap {
+            background: var(--surface-hover);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: var(--transition);
+        }
+        .converter-swap:hover { background: var(--surface-active); color: var(--gold); }
+        .converter-result {
+            margin-top: 12px;
+            background: #0b1120;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 14px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--gold);
+            text-align: center;
+        }
+        .converter-all {
+            margin-top: 10px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+            gap: 8px;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+        }
+        .converter-all div { background: #0b1120; border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; text-align: center; }
+        .converter-all strong { display: block; color: var(--text-main); font-size: 0.85rem; }
+
+        .file-input-wrap {
+            position: relative;
+            overflow: hidden;
+        }
+        .file-input-wrap input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--surface);
+            border: 1px solid var(--gold);
+            color: var(--text-main);
+            padding: 12px 18px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            z-index: 999;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: var(--transition);
+            pointer-events: none;
+        }
+        .toast.show { opacity: 1; transform: translateY(0); }
+
+        .pdf-header-only { display: none; }
+
+        /* Ocultar elementos de UI interactivos al exportar PDF si es necesario */
+        @media print {
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+
+    <!-- ================= COLUMNA IZQUIERDA: CONTROLES Y CONFIGURACIÓN ================= -->
+    <div class="no-print sticky-col">
+        <div class="panel">
+            <h1>Economía Imperial <span style="font-size: 0.75rem; background: rgba(245,158,11,0.1); color: var(--gold); padding: 4px 8px; border-radius: 20px; border: 1px solid rgba(245,158,11,0.2);">DM Core</span></h1>
+            <p class="helper-text">Centro operativo de control financiero, divisas y factores de crisis para <b>Casa de Naipes</b>.</p>
+
+            <div style="margin-top: 12px;">
+                <h3>Reglas del Sistema</h3>
+                <div class="guide-box"><b>1. Inflación Dual:</b> Lo cotidiano escala con la canasta; lo táctico utiliza la base de manual multiplicada por el Factor Global.</div>
+                <div class="guide-box"><b>2. Dinámica Retroactiva:</b> Al cambiar el nombre o símbolo de una divisa, se actualiza instantáneamente en toda la aplicación de forma dinámica.</div>
+            </div>
+        </div>
+
+        <div class="btn-stack">
+            <button class="btn btn-pdf" onclick="exportarPDF()">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                Exportar Reporte a PDF
+            </button>
+            <div class="btn-row">
+                <button class="btn btn-outline" onclick="exportarConfig()">💾 Guardar sesión</button>
+                <div class="file-input-wrap">
+                    <button class="btn btn-outline" type="button">📂 Cargar sesión</button>
+                    <input type="file" accept="application/json" onchange="importarConfig(event)" aria-label="Cargar archivo de sesión guardada">
+                </div>
+            </div>
+            <button class="btn btn-danger-outline" onclick="restaurarValoresPorDefecto()">↺ Restaurar valores por defecto</button>
+        </div>
+
+        <!-- Panel de Divisas Interactivo -->
+        <div class="panel">
+            <h3>Divisas Activas del Imperio</h3>
+            <p class="helper-text" style="margin-bottom: 10px;">Modifica los nombres, símbolos o valores. El impacto se propagará a todo el tablero.</p>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Moneda</th>
+                            <th>Símb</th>
+                            <th>Valor Base (pc)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="currencyTableBody"></tbody>
+                </table>
+            </div>
+            <button id="btnToggleEdit" class="btn" style="margin-top: 14px;" onclick="toggleEditCurrencies()">Editar Divisas</button>
+        </div>
+
+        <!-- Conversor de Divisas -->
+        <div class="panel">
+            <h3>Conversor de Divisas</h3>
+            <p class="helper-text" style="margin-bottom: 12px;">Calcula equivalencias exactas entre las monedas activas.</p>
+            <div class="converter-grid">
+                <div class="input-group" style="margin-bottom:0;">
+                    <label for="convAmount">Cantidad</label>
+                    <input type="number" id="convAmount" value="100" min="0" step="1" oninput="actualizarConversor()">
+                </div>
+                <button class="converter-swap" onclick="intercambiarConversor()" title="Intercambiar monedas" aria-label="Intercambiar monedas">⇄</button>
+                <div class="input-group" style="margin-bottom:0;">
+                    <label for="convTo">A</label>
+                    <select id="convTo" onchange="actualizarConversor()"></select>
+                </div>
+            </div>
+            <div class="input-group" style="margin-top: 10px; margin-bottom: 0;">
+                <label for="convFrom">Desde</label>
+                <select id="convFrom" onchange="actualizarConversor()"></select>
+            </div>
+            <div class="converter-result" id="convResult" aria-live="polite">—</div>
+            <div class="converter-all" id="convAll"></div>
+        </div>
+
+        <!-- Panel de Indicadores de Crisis Macroeconómica -->
+        <div class="panel">
+            <h3>Indicadores Macroeconómicos</h3>
+            <div class="input-group">
+                <label for="indICM">Confianza en la Moneda (ICM)</label>
+                <select id="indICM" oninput="actualizarTodo()">
+                    <option value="1">1 - Estable</option>
+                    <option value="2">2 - Tenue</option>
+                    <option value="3" selected>3 - Devaluada (Crisis)</option>
+                    <option value="4">4 - Colapso</option>
+                    <option value="5">5 - Anarquía Total</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label for="indTR">Desabastecimiento / Rutas</label>
+                <select id="indTR" oninput="actualizarTodo()">
+                    <option value="1">1 - Rutas Abiertas</option>
+                    <option value="2" selected>2 - Inseguras / Bandidos</option>
+                    <option value="3">3 - Bloqueo Parcial</option>
+                    <option value="4">4 - Sitio Militar</option>
+                    <option value="5">5 - Aislamiento Absoluto</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label for="indMT">Militarización / Guerra</label>
+                <select id="indMT" oninput="actualizarTodo()">
+                    <option value="1">1 - Paz</option>
+                    <option value="2">2 - Alerta</option>
+                    <option value="3" selected>3 - Economía de Guerra</option>
+                    <option value="4">4 - Reclutamiento Forzoso</option>
+                    <option value="5">5 - Guerra Total</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label for="indNIC">Impuestos y Corrupción (NIC)</label>
+                <select id="indNIC" oninput="actualizarTodo()">
+                    <option value="1">1 - Tributo Justo</option>
+                    <option value="2">2 - Extorsión Menor</option>
+                    <option value="3" selected>3 - Voracidad Imperial</option>
+                    <option value="4">4 - Saqueo Fiscal</option>
+                    <option value="5">5 - Mafia Institucionalizada</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Parámetros Base -->
+        <div class="panel" style="margin-bottom: 0;">
+            <h3>Parámetros Base</h3>
+            <div class="input-group">
+                <label for="canastaBase">Canasta Básica Actual (<span class="symDisplay">po</span>)</label>
+                <input type="number" id="canastaBase" value="10" min="1" step="0.5" oninput="actualizarTodo()">
+            </div>
+            <div class="row-2">
+                <div class="input-group">
+                    <label for="salarioDiario">Jornal Diario (<span class="symDisplay">po</span>)</label>
+                    <input type="number" id="salarioDiario" value="2" min="0.1" step="0.5" oninput="actualizarTodo()">
+                </div>
+                <div class="input-group">
+                    <label for="multEquipo">Mult. Equipo</label>
+                    <input type="number" id="multEquipo" value="1.0" min="0.1" step="0.1" oninput="actualizarTodo()">
+                </div>
+            </div>
+            <p class="field-hint">El jornal y el multiplicador de equipo no alteran el Factor Global; solo se usan en los cálculos de poder adquisitivo.</p>
+        </div>
+    </div>
+
+    <!-- ================= COLUMNA DERECHA: RESULTADOS, HUD Y MATRIZ (Contenido Exportable PDF) ================= -->
+    <div id="pdfContent">
+        <!-- Encabezado exclusivo para vista PDF impresa -->
+        <div class="pdf-header-only">
+            <h1 style="color: #f59e0b; border-bottom: 2px solid #334155; padding-bottom: 10px;">Reporte Macroeconómico - Casa de Naipes</h1>
+            <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 20px;" id="pdfTimestamp">Tablero de Economía Imperial (DM)</p>
+        </div>
+
+        <!-- Métricas Rápidas HUD -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <h4>Factor Global</h4>
+                <div class="metric-value" id="factorGlobal">1.00x</div>
+                <div class="factor-breakdown" id="factorBreakdown"></div>
+            </div>
+            <div class="metric-card">
+                <h4>Magia Local</h4>
+                <div id="dispoMagia" class="metric-badge badge-warn">Controlada</div>
+            </div>
+            <div class="metric-card">
+                <h4>Mercado Negro</h4>
+                <div id="accesoNegro" class="metric-badge badge-warn">Moderado</div>
+            </div>
+        </div>
+
+        <!-- Tarjetas de Datos Brutos Estilizadas -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+            <div class="panel" style="margin-bottom:0;">
+                <h2>Estándar de Vida</h2>
+                <ul class="metric-sublist">
+                    <li><span>Posada mala (noche)</span> <strong id="posadaMala"></strong></li>
+                    <li><span>Posada decente (noche)</span> <strong id="posadaBuena"></strong></li>
+                    <li><span>Comida en taberna</span> <strong id="comidaPlato"></strong></li>
+                    <li><span>Ración de viaje</span> <strong id="racionViaje"></strong></li>
+                </ul>
+            </div>
+            <div class="panel" style="margin-bottom:0;">
+                <h2>Poder Adquisitivo</h2>
+                <ul class="metric-sublist">
+                    <li><span>Días de trabajo / canasta</span> <strong id="diasTrabajo"></strong></li>
+                    <li><span>Pensión mensual familiar</span> <strong id="pensionMes"></strong></li>
+                    <li><span>Soborno mínimo a guardia</span> <strong id="sobornoGuardia"></strong></li>
+                    <li><span>Info en cantina</span> <strong id="infoCantina"></strong></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Matriz Maestra de Precios por Asentamiento -->
+        <div class="panel" style="margin-bottom: 0;">
+            <div class="filter-header">
+                <h2 style="margin: 0; border: none;">Matriz de Precios por Asentamiento</h2>
+                <div class="filter-controls no-print">
+                    <select id="selectAsentamiento" onchange="renderizarMatrizPrecios()" aria-label="Filtrar por asentamiento">
+                        <option value="todos">-- Todos los Asentamientos --</option>
+                        <option value="Rancho">Rancho</option>
+                        <option value="Aldea">Aldea</option>
+                        <option value="Pueblo">Pueblo</option>
+                        <option value="Puerto Pequeño">Puerto Pequeño</option>
+                        <option value="Ciudad">Ciudad</option>
+                        <option value="Puerto Mediano">Puerto Mediano</option>
+                        <option value="Puerto Grande">Puerto Grande</option>
+                        <option value="Capital">Capital</option>
+                    </select>
+                    <select id="selectCategoria" onchange="renderizarMatrizPrecios()" aria-label="Filtrar por categoría">
+                        <option value="todas">-- Todas las Categorías --</option>
+                    </select>
+                    <button class="btn btn-outline" style="width: auto; padding: 8px 14px;" onclick="copiarMatrizCSV()">📋 Copiar CSV</button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Asentamiento</th>
+                            <th>Categoría / Servicio</th>
+                            <th>Mín</th>
+                            <th>Prom</th>
+                            <th>Máx</th>
+                            <th>Nota</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pricingTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const DEFAULT_CURRENCIES = [
+    { name: "Cobre", symbol: "pc", valueInCopper: 1 },
+    { name: "Plata", symbol: "pp", valueInCopper: 10 },
+    { name: "Oro", symbol: "po", valueInCopper: 100 },
+    { name: "Platino", symbol: "pt", valueInCopper: 1000 }
+];
+
+const DEFAULT_INDICATORS = { icm: 3, tr: 2, mt: 3, nic: 3 };
+const DEFAULT_PARAMS = { canasta: 10, salario: 2, mult: 1.0 };
+
+let currencies = DEFAULT_CURRENCIES.map(c => ({ ...c }));
+let isEditingCurrencies = false;
+let factorGlobalValue = 1;
+
+const categoriasBase = [
+    { nombre: "Objetos Mundanos (Herramientas/Ropa)", baseMin: 0.5, baseProm: 2, baseMax: 10, nota: "Afectado por canasta" },
+    { nombre: "Armas No Mágicas", baseMin: 2, baseProm: 15, baseMax: 50, nota: "Restricción militar" },
+    { nombre: "Armaduras No Mágicas", baseMin: 10, baseProm: 50, baseMax: 1500, nota: "Escasez de acero" },
+    { nombre: "Magia Mundana (Trucos/Servicios)", baseMin: 5, baseProm: 10, baseMax: 25, nota: "Lanzadores locales" },
+    { nombre: "Objetos Mágicos (Comunes/Poco Comunes)", baseMin: 50, baseProm: 200, baseMax: 500, nota: "Controlado por gremios" },
+    { nombre: "Armas Mágicas (+1 / +2)", baseMin: 500, baseProm: 2500, baseMax: 10000, nota: "Muy cotizado" },
+    { nombre: "Conjuros (Nivel 1 al 3)", baseMin: 10, baseProm: 50, baseMax: 150, nota: "Precio por nivel" },
+    { nombre: "Conjuros (Nivel 4 al 6)", baseMin: 200, baseProm: 800, baseMax: 2000, nota: "Solo ciudades/capital" },
+    { nombre: "Conjuros (Nivel 7 al 9)", baseMin: 5000, baseProm: 15000, baseMax: 50000, nota: "Altos arcanistas" },
+    { nombre: "Objetos Legendarios", baseMin: 20000, baseProm: 75000, baseMax: 200000, nota: "Piezas únicas" },
+    { nombre: "Artefactos", baseMin: 100000, baseProm: 500000, baseMax: 1000000, nota: "Invaluables" }
+];
+
+const asentamientosConfig = {
+    "Rancho": { modBase: 0.7, desc: "Supervivencia básica" },
+    "Aldea": { modBase: 0.9, desc: "Bienes limitados" },
+    "Pueblo": { modBase: 1.0, desc: "Estándar de manual" },
+    "Puerto Pequeño": { modBase: 1.1, desc: "Contrabando menor" },
+    "Ciudad": { modBase: 1.3, desc: "Mercados prósperos" },
+    "Puerto Mediano": { modBase: 1.4, desc: "Alto flujo comercial" },
+    "Puerto Grande": { modBase: 1.6, desc: "Exóticos e importados" },
+    "Capital": { modBase: 1.8, desc: "Centro del imperio" }
+};
+
+const INDICATOR_LABELS = {
+    icm: "Confianza (ICM)",
+    tr: "Rutas (TR)",
+    mt: "Guerra (MT)",
+    nic: "Impuestos (NIC)"
+};
+const INDICATOR_WEIGHTS = { icm: 0.3, tr: 0.3, mt: 0.2, nic: 0.2 };
+
+function mostrarToast(mensaje) {
+    const toast = document.getElementById('toast');
+    toast.textContent = mensaje;
+    toast.classList.add('show');
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(() => toast.classList.remove('show'), 2600);
+}
+
+function renderCurrencies() {
+    let tbody = document.getElementById('currencyTableBody');
+    tbody.innerHTML = '';
+    currencies.forEach((curr, index) => {
+        let tr = document.createElement('tr');
+        if (isEditingCurrencies) {
+            tr.innerHTML = `
+                <td><input type="text" id="curr-name-${index}" value="${curr.name}" aria-label="Nombre de moneda ${index + 1}"></td>
+                <td><input type="text" id="curr-sym-${index}" value="${curr.symbol}" style="width: 60px;" aria-label="Símbolo de moneda ${index + 1}"></td>
+                <td><input type="number" id="curr-val-${index}" value="${curr.valueInCopper}" min="0.01" step="any" oninput="updateCurrencyValue(${index})" aria-label="Valor en cobre de moneda ${index + 1}"></td>
+            `;
+        } else {
+            tr.innerHTML = `
+                <td>${curr.name}</td>
+                <td><b>${curr.symbol}</b></td>
+                <td>${curr.valueInCopper} pc</td>
+            `;
+        }
+        tbody.appendChild(tr);
+    });
+}
+
+function toggleEditCurrencies() {
+    isEditingCurrencies = !isEditingCurrencies;
+    let btn = document.getElementById('btnToggleEdit');
+    if (isEditingCurrencies) {
+        btn.innerText = "Guardar Divisas";
+        btn.className = "btn btn-success";
+    } else {
+        currencies.forEach((curr, index) => {
+            let nameInput = document.getElementById(`curr-name-${index}`);
+            let symInput = document.getElementById(`curr-sym-${index}`);
+            if (nameInput && nameInput.value.trim()) curr.name = nameInput.value.trim();
+            if (symInput && symInput.value.trim()) curr.symbol = symInput.value.trim();
+        });
+        btn.innerText = "Editar Divisas";
+        btn.className = "btn";
+        mostrarToast("Divisas actualizadas");
+    }
+    renderCurrencies();
+    poblarConversor();
+    actualizarTodo();
+}
+
+function updateCurrencyValue(index) {
+    let valInput = document.getElementById(`curr-val-${index}`);
+    if (valInput) {
+        let val = parseFloat(valInput.value);
+        currencies[index].valueInCopper = (isNaN(val) || val <= 0) ? currencies[index].valueInCopper : val;
+    }
+    poblarConversor();
+    actualizarTodo();
+}
+
+function getPrimarySymbol() {
+    return currencies[2] ? currencies[2].symbol : (currencies[0] ? currencies[0].symbol : 'po');
+}
+
+/* ---------- Conversor de divisas ---------- */
+function poblarConversor() {
+    const from = document.getElementById('convFrom');
+    const to = document.getElementById('convTo');
+    const prevFrom = from.value, prevTo = to.value;
+    from.innerHTML = '';
+    to.innerHTML = '';
+    currencies.forEach((c, i) => {
+        from.innerHTML += `<option value="${i}">${c.name} (${c.symbol})</option>`;
+        to.innerHTML += `<option value="${i}">${c.name} (${c.symbol})</option>`;
+    });
+    from.value = currencies[prevFrom] ? prevFrom : (currencies.length > 2 ? 2 : 0);
+    to.value = currencies[prevTo] ? prevTo : 0;
+    actualizarConversor();
+}
+
+function intercambiarConversor() {
+    const from = document.getElementById('convFrom');
+    const to = document.getElementById('convTo');
+    const tmp = from.value;
+    from.value = to.value;
+    to.value = tmp;
+    actualizarConversor();
+}
+
+function actualizarConversor() {
+    const amount = parseFloat(document.getElementById('convAmount').value) || 0;
+    const fromIdx = parseInt(document.getElementById('convFrom').value);
+    const toIdx = parseInt(document.getElementById('convTo').value);
+    const from = currencies[fromIdx];
+    const to = currencies[toIdx];
+    if (!from || !to) return;
+
+    const valueInCopper = amount * from.valueInCopper;
+    const resultado = valueInCopper / to.valueInCopper;
+    document.getElementById('convResult').innerText =
+        `${amount.toLocaleString()} ${from.symbol} = ${resultado.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${to.symbol}`;
+
+    const allDiv = document.getElementById('convAll');
+    allDiv.innerHTML = currencies.map(c => {
+        const eq = valueInCopper / c.valueInCopper;
+        return `<div><strong>${eq.toLocaleString(undefined, { maximumFractionDigits: 2 })}</strong>${c.symbol}</div>`;
+    }).join('');
+}
+
+/* ---------- Cálculo principal ---------- */
+function actualizarTodo() {
+    let canasta = parseFloat(document.getElementById('canastaBase').value) || 10;
+    let salario = parseFloat(document.getElementById('salarioDiario').value) || 2;
+    let mult = parseFloat(document.getElementById('multEquipo').value) || 1.0;
+
+    let icm = parseInt(document.getElementById('indICM').value) || 3;
+    let tr = parseInt(document.getElementById('indTR').value) || 2;
+    let mt = parseInt(document.getElementById('indMT').value) || 3;
+    let nic = parseInt(document.getElementById('indNIC').value) || 3;
+
+    let primarySym = getPrimarySymbol();
+    document.querySelectorAll('.symDisplay').forEach(el => el.innerText = primarySym);
+
+    const ponderado = icm * INDICATOR_WEIGHTS.icm + tr * INDICATOR_WEIGHTS.tr + mt * INDICATOR_WEIGHTS.mt + nic * INDICATOR_WEIGHTS.nic;
+    factorGlobalValue = (canasta / 10) * ponderado * mult;
+    document.getElementById('factorGlobal').innerText = factorGlobalValue.toFixed(2) + 'x';
+
+    // Desglose visual del factor (contribución ponderada de cada indicador, sobre un máximo de 5)
+    const indicadores = { icm, tr, mt, nic };
+    document.getElementById('factorBreakdown').innerHTML = Object.keys(indicadores).map(key => {
+        const pct = (indicadores[key] / 5) * 100;
+        return `
+            <div class="factor-row">
+                <span>${INDICATOR_LABELS[key]}</span>
+                <span class="factor-bar-track"><span class="factor-bar-fill" style="width:${pct}%;"></span></span>
+                <span>${indicadores[key]}</span>
+            </div>`;
+    }).join('');
+
+    const magiaEl = document.getElementById('dispoMagia');
+    if (icm >= 4) { magiaEl.textContent = "Restringida"; magiaEl.className = "metric-badge badge-bad"; }
+    else if (icm == 3) { magiaEl.textContent = "Controlada"; magiaEl.className = "metric-badge badge-warn"; }
+    else { magiaEl.textContent = "Fluida"; magiaEl.className = "metric-badge badge-ok"; }
+
+    const negroEl = document.getElementById('accesoNegro');
+    if (tr >= 3) { negroEl.textContent = "Alto / Inflado"; negroEl.className = "metric-badge badge-bad"; }
+    else { negroEl.textContent = "Moderado"; negroEl.className = "metric-badge badge-warn"; }
+
+    document.getElementById('posadaMala').innerText = (canasta * 0.05).toFixed(1) + ' ' + primarySym;
+    document.getElementById('posadaBuena').innerText = (canasta * 0.15).toFixed(1) + ' ' + primarySym;
+    document.getElementById('comidaPlato').innerText = (canasta * 0.02).toFixed(1) + ' ' + primarySym;
+    document.getElementById('racionViaje').innerText = (canasta * 0.04).toFixed(1) + ' ' + primarySym;
+
+    document.getElementById('diasTrabajo').innerText = (canasta / salario).toFixed(1) + ' días';
+    document.getElementById('pensionMes').innerText = (canasta * 4).toFixed(1) + ' ' + primarySym;
+    document.getElementById('sobornoGuardia').innerText = (canasta * 0.2).toFixed(1) + ' ' + primarySym;
+    document.getElementById('infoCantina').innerText = (canasta * 0.05).toFixed(1) + ' ' + primarySym;
+
+    renderizarMatrizPrecios();
+}
+
+function poblarFiltroCategorias() {
+    const sel = document.getElementById('selectCategoria');
+    if (sel.options.length > 1) return;
+    categoriasBase.forEach(cat => {
+        sel.innerHTML += `<option value="${cat.nombre}">${cat.nombre}</option>`;
+    });
+}
+
+function renderizarMatrizPrecios() {
+    let tbody = document.getElementById('pricingTableBody');
+    tbody.innerHTML = '';
+
+    let filtroAsentamiento = document.getElementById('selectAsentamiento').value;
+    let filtroCategoria = document.getElementById('selectCategoria').value;
+    let canasta = parseFloat(document.getElementById('canastaBase').value) || 10;
+    let primarySym = getPrimarySymbol();
+    let filasRenderizadas = 0;
+
+    Object.keys(asentamientosConfig).forEach(asentamiento => {
+        if (filtroAsentamiento !== "todos" && filtroAsentamiento !== asentamiento) return;
+        let conf = asentamientosConfig[asentamiento];
+
+        categoriasBase.forEach(cat => {
+            if (filtroCategoria !== "todas" && filtroCategoria !== cat.nombre) return;
+
+            let infladorMundano = cat.baseMax <= 50 ? (canasta / 10) : factorGlobalValue;
+            let minVal = Math.max(1, Math.round(cat.baseMin * conf.modBase * infladorMundano));
+            let promVal = Math.round(cat.baseProm * conf.modBase * infladorMundano);
+            let maxVal = Math.round(cat.baseMax * conf.modBase * infladorMundano);
+
+            let tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><b>${asentamiento}</b></td>
+                <td>${cat.nombre}</td>
+                <td>${minVal.toLocaleString()} ${primarySym}</td>
+                <td>${promVal.toLocaleString()} ${primarySym}</td>
+                <td>${maxVal.toLocaleString()} ${primarySym}</td>
+                <td style="font-size: 0.8rem; color: var(--text-muted);">${cat.nota}</td>
+            `;
+            tbody.appendChild(tr);
+            filasRenderizadas++;
+        });
+    });
+
+    if (filasRenderizadas === 0) {
+        tbody.innerHTML = `<tr class="empty-row"><td colspan="6">No hay resultados para los filtros seleccionados.</td></tr>`;
+    }
+}
+
+function copiarMatrizCSV() {
+    const rows = [["Asentamiento", "Categoría", "Mín", "Prom", "Máx", "Nota"]];
+    document.querySelectorAll('#pricingTableBody tr').forEach(tr => {
+        const cells = Array.from(tr.children).map(td => td.textContent.trim());
+        if (cells.length === 6) rows.push(cells);
+    });
+    const csv = rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n');
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(csv).then(() => mostrarToast("Tabla copiada como CSV")).catch(() => mostrarToast("No se pudo copiar automáticamente"));
+    } else {
+        mostrarToast("Portapapeles no disponible en este navegador");
+    }
+}
+
+/* ---------- Guardar / cargar sesión ---------- */
+function recopilarEstado() {
+    return {
+        currencies,
+        indicators: {
+            icm: document.getElementById('indICM').value,
+            tr: document.getElementById('indTR').value,
+            mt: document.getElementById('indMT').value,
+            nic: document.getElementById('indNIC').value
+        },
+        params: {
+            canasta: document.getElementById('canastaBase').value,
+            salario: document.getElementById('salarioDiario').value,
+            mult: document.getElementById('multEquipo').value
+        },
+        filtros: {
+            asentamiento: document.getElementById('selectAsentamiento').value,
+            categoria: document.getElementById('selectCategoria').value
+        }
+    };
+}
+
+function exportarConfig() {
+    const estado = recopilarEstado();
+    const blob = new Blob([JSON.stringify(estado, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `sesion_economia_casa_de_naipes_${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    mostrarToast("Sesión guardada como archivo JSON");
+}
+
+function importarConfig(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const estado = JSON.parse(e.target.result);
+            if (Array.isArray(estado.currencies) && estado.currencies.length) currencies = estado.currencies;
+            if (estado.indicators) {
+                document.getElementById('indICM').value = estado.indicators.icm ?? DEFAULT_INDICATORS.icm;
+                document.getElementById('indTR').value = estado.indicators.tr ?? DEFAULT_INDICATORS.tr;
+                document.getElementById('indMT').value = estado.indicators.mt ?? DEFAULT_INDICATORS.mt;
+                document.getElementById('indNIC').value = estado.indicators.nic ?? DEFAULT_INDICATORS.nic;
+            }
+            if (estado.params) {
+                document.getElementById('canastaBase').value = estado.params.canasta ?? DEFAULT_PARAMS.canasta;
+                document.getElementById('salarioDiario').value = estado.params.salario ?? DEFAULT_PARAMS.salario;
+                document.getElementById('multEquipo').value = estado.params.mult ?? DEFAULT_PARAMS.mult;
+            }
+            if (estado.filtros) {
+                if (estado.filtros.asentamiento) document.getElementById('selectAsentamiento').value = estado.filtros.asentamiento;
+                if (estado.filtros.categoria) document.getElementById('selectCategoria').value = estado.filtros.categoria;
+            }
+            isEditingCurrencies = false;
+            document.getElementById('btnToggleEdit').innerText = "Editar Divisas";
+            document.getElementById('btnToggleEdit').className = "btn";
+            renderCurrencies();
+            poblarConversor();
+            actualizarTodo();
+            mostrarToast("Sesión cargada correctamente");
+        } catch (err) {
+            mostrarToast("El archivo no es una sesión válida");
+        }
+        event.target.value = '';
+    };
+    reader.readAsText(file);
+}
+
+function restaurarValoresPorDefecto() {
+    if (!confirm("Esto restaurará divisas, indicadores y parámetros a sus valores por defecto. ¿Continuar?")) return;
+    currencies = DEFAULT_CURRENCIES.map(c => ({ ...c }));
+    document.getElementById('indICM').value = DEFAULT_INDICATORS.icm;
+    document.getElementById('indTR').value = DEFAULT_INDICATORS.tr;
+    document.getElementById('indMT').value = DEFAULT_INDICATORS.mt;
+    document.getElementById('indNIC').value = DEFAULT_INDICATORS.nic;
+    document.getElementById('canastaBase').value = DEFAULT_PARAMS.canasta;
+    document.getElementById('salarioDiario').value = DEFAULT_PARAMS.salario;
+    document.getElementById('multEquipo').value = DEFAULT_PARAMS.mult;
+    document.getElementById('selectAsentamiento').value = 'todos';
+    document.getElementById('selectCategoria').value = 'todas';
+    isEditingCurrencies = false;
+    document.getElementById('btnToggleEdit').innerText = "Editar Divisas";
+    document.getElementById('btnToggleEdit').className = "btn";
+    renderCurrencies();
+    poblarConversor();
+    actualizarTodo();
+    mostrarToast("Valores por defecto restaurados");
+}
+
+/* ---------- Exportación a PDF ---------- */
+function exportarPDF() {
+    const element = document.getElementById('pdfContent');
+    const headerOnly = element.querySelector('.pdf-header-only');
+    document.getElementById('pdfTimestamp').textContent =
+        `Tablero de Economía Imperial (DM) · Generado el ${new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })}`;
+    if (headerOnly) headerOnly.style.display = 'block';
+
+    const opt = {
+        margin:       10,
+        filename:     'Reporte_Economico_Casa_De_Naipes.pdf',
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#070a11' },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' },
+        pagebreak:    { mode: ['avoid-all', 'css'] }
+    };
+
+    mostrarToast("Generando PDF...");
+    html2pdf().from(element).set(opt).save().then(() => {
+        if (headerOnly) headerOnly.style.display = 'none';
+    });
+}
+
+window.onload = function() {
+    renderCurrencies();
+    poblarFiltroCategorias();
+    poblarConversor();
+    actualizarTodo();
+};
+</script>
+
+</body>
+</html>
