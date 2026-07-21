@@ -1,6 +1,6 @@
 # MrConee.github.io
 BaulDeHerramientasDnD
-# 🧰 Baúl de Herramientas para D&D <a href="index.html">(clic aquí)</>
+# 🧰 Baúl de Herramientas para D&D <a href="Index.html">(clic aquí)
 
 Una colección gratuita de herramientas web sencillas para ayudar a **Jugadores y Dungeon Masters** durante sus partidas de **Dungeons & Dragons**.
 
