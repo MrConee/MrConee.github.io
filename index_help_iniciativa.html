@@ -1,0 +1,1295 @@
+<!DOCTYPE html>
+<html lang="es" class="dark" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor de Combate TTRPG - Dark Fantasy</title>
+    <!-- Aplicar el tema guardado ANTES de pintar la página, para evitar parpadeos -->
+    <script>
+        (function() {
+            try {
+                const saved = localStorage.getItem('ttrpg_combat_state');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (parsed && parsed.tema === 'light') {
+                        document.documentElement.setAttribute('data-theme', 'light');
+                    }
+                }
+            } catch (e) { /* usar tema por defecto si algo falla */ }
+        })();
+    </script>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkbg: '#141414',
+                        darkpanel: '#1f1f1f',
+                        accent: '#c89b3c',
+                        accenthover: '#b08731',
+                        customtext: '#eeeeee',
+                        pcblue: '#3b82f6',
+                        enmyred: '#ef4444',
+                        allygreen: '#22c55e',
+                        deadgray: '#6b7280',
+                        turngold: '#f59e0b'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Segoe UI', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Inter Font & Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #141414;
+            color: #eeeeee;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+        }
+        /* Custom scrollbars for dark fantasy aesthetic */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #141414;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2a2a2a;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #c89b3c;
+        }
+        .turn-highlight {
+            box-shadow: 0 0 25px rgba(200, 155, 60, 0.6);
+            border-color: #c89b3c !important;
+            animation: pulse-gold 2s infinite;
+        }
+        @keyframes pulse-gold {
+            0% { box-shadow: 0 0 15px rgba(200, 155, 60, 0.4); }
+            50% { box-shadow: 0 0 30px rgba(200, 155, 60, 0.8); }
+            100% { box-shadow: 0 0 15px rgba(200, 155, 60, 0.4); }
+        }
+        .boss-card {
+            border-color: #c89b3c !important;
+            background: linear-gradient(135deg, rgba(200,155,60,0.08), transparent 60%);
+        }
+
+        /* ===== Señalización visual al abrir el formulario en modo edición ===== */
+        @keyframes signal-glow {
+            0%, 100% { box-shadow: 0 0 0 rgba(200, 155, 60, 0); border-color: rgba(200, 155, 60, 0.15); }
+            15% { box-shadow: 0 0 40px 8px rgba(200, 155, 60, 0.55); border-color: #c89b3c; }
+            35% { box-shadow: 0 0 8px rgba(200, 155, 60, 0.1); border-color: rgba(200, 155, 60, 0.15); }
+            55% { box-shadow: 0 0 40px 8px rgba(200, 155, 60, 0.55); border-color: #c89b3c; }
+            75% { box-shadow: 0 0 8px rgba(200, 155, 60, 0.1); border-color: rgba(200, 155, 60, 0.15); }
+        }
+        #add-participant-panel.form-signal {
+            animation: signal-glow 1.6s ease-in-out;
+        }
+
+        /* ===== Confirmación visual de daño / curación ===== */
+        @keyframes flash-damage {
+            0% { box-shadow: inset 0 0 0 999px rgba(239, 68, 68, 0.35); }
+            100% { box-shadow: inset 0 0 0 999px rgba(239, 68, 68, 0); }
+        }
+        @keyframes flash-heal {
+            0% { box-shadow: inset 0 0 0 999px rgba(34, 197, 94, 0.35); }
+            100% { box-shadow: inset 0 0 0 999px rgba(34, 197, 94, 0); }
+        }
+        .flash-damage { animation: flash-damage 0.6s ease-out; }
+        .flash-heal { animation: flash-heal 0.6s ease-out; }
+
+        /* ===== Drag & Drop (reordenar antes de iniciar combate) ===== */
+        .drag-handle {
+            cursor: grab;
+            color: #6b7280;
+        }
+        .drag-handle:active { cursor: grabbing; }
+        tr.dragging { opacity: 0.4; }
+        tr.drag-over { border-top: 2px solid #c89b3c; }
+        tr.row-selected { background-color: rgba(200, 155, 60, 0.08) !important; outline: 1px solid rgba(200,155,60,0.4); outline-offset: -1px; }
+
+        /* ===== Estados / efectos activos ===== */
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 999px;
+            background: rgba(200, 155, 60, 0.12);
+            border: 1px solid rgba(200, 155, 60, 0.35);
+            color: #e5c992;
+        }
+        .status-pill button {
+            color: #9ca3af;
+            font-weight: 700;
+            line-height: 1;
+        }
+        .status-pill button:hover { color: #ef4444; }
+
+        /* ===== Tema Claro ===== */
+        html[data-theme="light"] body { background-color: #f4f1ea; color: #1f1f1f; }
+        html[data-theme="light"] .bg-darkbg { background-color: #f4f1ea !important; }
+        html[data-theme="light"] .bg-darkpanel { background-color: #ffffff !important; }
+        html[data-theme="light"] .bg-neutral-900,
+        html[data-theme="light"] .bg-neutral-950,
+        html[data-theme="light"] .bg-neutral-900\/60,
+        html[data-theme="light"] .bg-neutral-900\/80 { background-color: #eee9df !important; }
+        html[data-theme="light"] .bg-neutral-800 { background-color: #e4ded1 !important; }
+        html[data-theme="light"] .hover\:bg-neutral-700:hover,
+        html[data-theme="light"] .hover\:bg-neutral-800:hover,
+        html[data-theme="light"] .hover\:bg-neutral-900\/60:hover { background-color: #ddd6c7 !important; }
+        html[data-theme="light"] .border-neutral-800,
+        html[data-theme="light"] .border-neutral-700,
+        html[data-theme="light"] .border-neutral-700\/60,
+        html[data-theme="light"] .border-neutral-700\/80,
+        html[data-theme="light"] .divide-neutral-800\/60 { border-color: #d8d2c4 !important; }
+        html[data-theme="light"] .text-customtext,
+        html[data-theme="light"] .text-gray-200,
+        html[data-theme="light"] .text-gray-300 { color: #2a2a2a !important; }
+        html[data-theme="light"] .text-gray-400,
+        html[data-theme="light"] .text-gray-500 { color: #6b6355 !important; }
+        html[data-theme="light"] ::-webkit-scrollbar-track { background: #f4f1ea; }
+        html[data-theme="light"] ::-webkit-scrollbar-thumb { background: #ddd6c7; }
+        html[data-theme="light"] #history-console { color: #2a2a2a; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col text-customtext selection:bg-accent selection:text-darkbg">
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <!-- Confirm Modal -->
+    <div id="confirm-modal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-darkpanel border border-accent/40 rounded-xl p-6 max-w-md w-full shadow-2xl">
+            <h3 id="confirm-title" class="text-xl font-bold text-accent mb-2">Confirmación</h3>
+            <p id="confirm-message" class="text-sm text-gray-300 mb-6">¿Estás seguro de realizar esta acción?</p>
+            <div class="flex justify-end space-x-3">
+                <button id="confirm-cancel" class="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-gray-300 rounded-lg text-sm font-medium transition-colors">Cancelar</button>
+                <button id="confirm-ok" class="px-4 py-2 bg-accent hover:bg-accenthover text-darkbg rounded-lg text-sm font-bold transition-colors">Aceptar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Header / Top Panel -->
+    <header class="bg-darkpanel border-b border-neutral-800 px-6 py-4 shadow-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            
+            <!-- Title & Round Info -->
+            <div class="flex items-center space-x-6">
+                <div>
+                    <h1 class="text-2xl font-black tracking-wider text-accent uppercase flex items-center gap-2">
+                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                        Gestor de Combate
+                    </h1>
+                    <p class="text-xs text-gray-400">D&D 5E & TTRPG Dark Fantasy Engine</p>
+                </div>
+                <div class="bg-neutral-900 border border-neutral-700/60 px-4 py-2 rounded-lg flex items-center space-x-3">
+                    <span id="round-display-label" class="text-xs font-semibold uppercase text-accent tracking-wider">Ronda 1</span>
+                    <span id="combat-status-badge" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-neutral-800 text-gray-400">Preparación</span>
+                </div>
+            </div>
+
+            <!-- Top Controls & Actions -->
+            <div class="flex flex-wrap items-center gap-3">
+                <!-- Surprise Checkbox -->
+                <label class="flex items-center space-x-2 bg-neutral-900/80 px-3 py-1.5 rounded-lg border border-neutral-800 cursor-pointer hover:border-neutral-700 transition-colors">
+                    <input type="checkbox" id="surprise-checkbox" class="w-4 h-4 rounded bg-neutral-800 border-neutral-700 text-accent focus:ring-accent">
+                    <span class="text-xs font-medium text-gray-300">Ronda de Sorpresa (Ronda 0)</span>
+                </label>
+
+                <!-- Primary Action Buttons -->
+                <button onclick="iniciarCombate()" id="btn-iniciar" class="px-4 py-2 bg-accent hover:bg-accenthover text-darkbg font-bold rounded-lg text-sm shadow-lg shadow-accent/20 transition-all flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Iniciar Combate
+                </button>
+
+                <button onclick="nuevoCombate()" class="px-3 py-2 bg-neutral-800 hover:bg-red-900/40 hover:text-red-400 text-gray-300 rounded-lg text-sm font-medium transition-colors border border-neutral-700/60" title="Reiniciar combate">
+                    Nuevo Combate
+                </button>
+
+                <button onclick="toggleMostrarAC()" id="btn-toggle-ac" class="px-3 py-2 bg-neutral-800 hover:bg-neutral-700 text-gray-300 rounded-lg text-sm font-medium transition-colors border border-neutral-700/60">
+                    Ocultar AC
+                </button>
+
+                <button onclick="toggleTema()" id="btn-toggle-tema" class="px-3 py-2 bg-neutral-800 hover:bg-neutral-700 text-gray-300 rounded-lg text-sm font-medium transition-colors border border-neutral-700/60" title="Cambiar entre tema claro y oscuro">
+                    🌙 Oscuro
+                </button>
+
+                <!-- Dropdown for Exports / Imports -->
+                <div class="relative group">
+                    <button class="px-3 py-2 bg-neutral-800 hover:bg-neutral-700 text-gray-300 rounded-lg text-sm font-medium transition-colors border border-neutral-700/60 flex items-center gap-1">
+                        Datos <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div class="absolute right-0 mt-1 w-48 bg-darkpanel border border-neutral-700 rounded-lg shadow-2xl py-1 hidden group-hover:block z-50">
+                        <button onclick="exportarTXT()" class="w-full text-left px-4 py-2 text-xs text-gray-300 hover:bg-neutral-800 hover:text-accent">Exportar Historial (.txt)</button>
+                        <button onclick="exportarJSON()" class="w-full text-left px-4 py-2 text-xs text-gray-300 hover:bg-neutral-800 hover:text-accent">Exportar Combate (.json)</button>
+                        <label class="w-full text-left px-4 py-2 text-xs text-gray-300 hover:bg-neutral-800 hover:text-accent block cursor-pointer">
+                            Importar Combate (.json)
+                            <input type="file" id="import-file-input" accept=".json" onchange="importarJSON(event)" class="hidden">
+                        </label>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </header>
+
+    <!-- Main Workspace Layout -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Left Column: Form & Participant Pre-combat Table or Controls (Span 5) -->
+        <section class="lg:col-span-5 flex flex-col space-y-6">
+
+            <!-- Panel 2: Agregar Participantes Form -->
+            <div id="add-participant-panel" class="bg-darkpanel border border-neutral-800 rounded-xl p-5 shadow-lg relative">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-base font-bold text-accent uppercase tracking-wide flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
+                        Agregar Participante
+                    </h2>
+                    <span class="text-[11px] text-gray-400">Atajo: [Enter] en campos</span>
+                </div>
+
+                <form id="participant-form" onsubmit="handleParticipantFormSubmit(event)" class="space-y-4">
+                    <input type="hidden" id="edit-index" value="-1">
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="sm:col-span-2">
+                            <label class="block text-xs font-medium text-gray-400 mb-1">Nombre</label>
+                            <input type="text" id="p-nombre" required placeholder="Ej. Thorin o Goblin Arquero" class="w-full bg-neutral-900 border border-neutral-700/80 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-gray-400 mb-1">Iniciativa</label>
+                            <div class="flex space-x-1">
+                                <input type="number" id="p-iniciativa" required placeholder="14" class="w-full bg-neutral-900 border border-neutral-700/80 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent">
+                                <input type="number" id="p-iniciativa-mod" value="0" title="Modificador para la tirada 1d20" class="w-14 bg-neutral-900 border border-neutral-700/80 rounded-lg px-1.5 py-2 text-xs text-center text-gray-300 focus:outline-none focus:border-accent" placeholder="Mod">
+                                <button type="button" onclick="tirarIniciativaAutomatica()" class="px-2.5 bg-neutral-800 hover:bg-neutral-700 text-accent border border-neutral-700 rounded-lg text-xs font-bold shrink-0" title="Tirar 1d20 + Modificador">🎲</button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-gray-400 mb-1">Clase de Armadura (AC)</label>
+                            <input type="number" id="p-ac" value="10" required class="w-full bg-neutral-900 border border-neutral-700/80 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-gray-400 mb-1">HP Máximo</label>
+                            <input type="number" id="p-hpmax" min="1" value="20" required oninput="syncHpActualDefault()" class="w-full bg-neutral-900 border border-neutral-700/80 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-gray-400 mb-1">HP Actual</label>
+                            <input type="number" id="p-hpact" min="0" value="20" required class="w-full bg-neutral-900 border border-neutral-700/80 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent">
+                        </div>
+
+                        <div class="sm:col-span-2">
+                            <label class="block text-xs font-medium text-gray-400 mb-1">Tipo de Participante</label>
+                            <div class="grid grid-cols-3 gap-2">
+                                <label class="flex items-center justify-center space-x-1 bg-neutral-900 border border-neutral-700/80 rounded-lg py-2 px-2 cursor-pointer hover:bg-neutral-800">
+                                    <input type="radio" name="p-tipo" value="Jugador" checked class="text-pcblue focus:ring-pcblue">
+                                    <span class="text-xs font-medium text-pcblue">Jugador</span>
+                                </label>
+                                <label class="flex items-center justify-center space-x-1 bg-neutral-900 border border-neutral-700/80 rounded-lg py-2 px-2 cursor-pointer hover:bg-neutral-800">
+                                    <input type="radio" name="p-tipo" value="Enemigo" class="text-enmyred focus:ring-enmyred">
+                                    <span class="text-xs font-medium text-enmyred">Enemigo</span>
+                                </label>
+                                <label class="flex items-center justify-center space-x-1 bg-neutral-900 border border-neutral-700/80 rounded-lg py-2 px-2 cursor-pointer hover:bg-neutral-800">
+                                    <input type="radio" name="p-tipo" value="Aliado" class="text-allygreen focus:ring-allygreen">
+                                    <span class="text-xs font-medium text-allygreen">Aliado</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Extra helper for quick duplicate monsters -->
+                        <div class="sm:col-span-2 flex items-center justify-between pt-1">
+                            <div class="flex items-center space-x-2">
+                                <label class="text-xs text-gray-400">Cantidad a duplicar:</label>
+                                <input type="number" id="p-cantidad" min="1" max="10" value="1" class="w-16 bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-xs text-center">
+                            </div>
+                            <label class="flex items-center space-x-1.5 cursor-pointer">
+                                <input type="checkbox" id="p-boss" class="w-3.5 h-3.5 rounded bg-neutral-800 border-neutral-700 text-accent">
+                                <span class="text-xs font-medium text-accent">Marcar como Boss 👑</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="flex space-x-2 pt-2">
+                        <button type="submit" id="btn-submit-participant" class="flex-1 bg-neutral-800 hover:bg-neutral-700 border border-accent/40 text-accent font-bold py-2 rounded-lg text-sm transition-colors flex items-center justify-center gap-2">
+                            <span>Agregar Participante</span>
+                        </button>
+                        <button type="button" id="btn-cancel-edit" onclick="cancelarEdicion()" class="hidden px-4 bg-neutral-800 hover:bg-neutral-700 text-gray-300 rounded-lg text-sm font-medium">
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Panel 1 & 3: Participants Pre-combat Management Table -->
+            <div id="precombat-section" class="bg-darkpanel border border-neutral-800 rounded-xl p-5 shadow-lg flex-1 flex flex-col">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-base font-bold text-accent uppercase tracking-wide flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+                        Lista de Participantes (<span id="participant-count">0</span>)
+                    </h2>
+                    <div class="flex items-center space-x-2">
+                        <input type="text" id="search-filter" oninput="renderTabla()" placeholder="Buscar..." class="bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-xs text-gray-300 w-28 focus:outline-none focus:border-accent">
+                        <select id="filter-type" onchange="renderTabla()" class="bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-xs text-gray-300 focus:outline-none focus:border-accent">
+                            <option value="todos">Todos</option>
+                            <option value="Jugador">Jugadores</option>
+                            <option value="Enemigo">Enemigos</option>
+                            <option value="Aliado">Aliados</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto flex-1 max-h-[350px] border border-neutral-800 rounded-lg">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-neutral-900 text-gray-400 sticky top-0 uppercase tracking-wider font-semibold border-b border-neutral-800">
+                            <tr>
+                                <th class="p-2.5 w-6"></th>
+                                <th class="p-2.5">Nombre</th>
+                                <th class="p-2.5 text-center">Iniciativa</th>
+                                <th class="p-2.5 text-center">HP</th>
+                                <th class="p-2.5 text-center ac-header">AC</th>
+                                <th class="p-2.5 text-center">Tipo</th>
+                                <th class="p-2.5 text-right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="participants-table-body" class="divide-y divide-neutral-800/60">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+                <p id="table-empty-notice" class="text-center text-xs text-gray-500 py-6">No hay participantes agregados aún.</p>
+            </div>
+
+        </section>
+
+        <!-- Right Column: Combat Cards, Next Turn & History (Span 7) -->
+        <section class="lg:col-span-7 flex flex-col space-y-6">
+
+            <!-- Panel 4: Active Combat Cards & Turn Controller -->
+            <div id="combat-section" class="bg-darkpanel border border-neutral-800 rounded-xl p-5 shadow-lg flex flex-col">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-neutral-800">
+                    <div>
+                        <h2 class="text-base font-bold text-accent uppercase tracking-wide flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            Tarjetas de Combate
+                        </h2>
+                        <p class="text-xs text-gray-400" id="combat-subtitle">Inicia el combate para activar el control de turnos</p>
+                    </div>
+                    
+                    <!-- Siguiente Turno Big Button -->
+                    <button onclick="siguienteTurno()" id="btn-next-turn" disabled class="px-6 py-2.5 bg-neutral-800 text-neutral-500 cursor-not-allowed font-bold rounded-xl text-sm transition-all flex items-center gap-2 shadow-md">
+                        <span>Siguiente Turno</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
+                    </button>
+                </div>
+
+                <!-- Combat Progress Bar -->
+                <div class="w-full bg-neutral-900 rounded-full h-1.5 mb-4 overflow-hidden border border-neutral-800">
+                    <div id="combat-progress-bar" class="bg-accent h-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+
+                <!-- Cards Container -->
+                <div id="combat-cards-container" class="space-y-3 max-h-[480px] overflow-y-auto pr-1">
+                    <div class="text-center py-12 text-gray-500 text-xs">
+                        El combate no ha comenzado. Agrega participantes y presiona "Iniciar Combate".
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel 5: Historial / Consola de Eventos -->
+            <div class="bg-darkpanel border border-neutral-800 rounded-xl p-5 shadow-lg flex flex-col">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-base font-bold text-accent uppercase tracking-wide flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Bitácora de Eventos
+                    </h2>
+                    <button onclick="limpiarHistorial()" class="text-xs text-gray-400 hover:text-accent transition-colors">Limpiar consola</button>
+                </div>
+                
+                <div id="history-console" class="bg-neutral-950 border border-neutral-800/80 rounded-lg p-3 font-mono text-[11px] text-gray-300 h-36 overflow-y-auto space-y-1.5 selection:bg-accent selection:text-darkbg">
+                    <div class="text-gray-500 italic">[Sistema] Gestor de Combate iniciado correctamente. Listo para la aventura.</div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Footer / Keyboard Shortcuts Info -->
+    <footer class="bg-darkpanel border-t border-neutral-800 py-3 px-6 text-center text-xs text-gray-500">
+        <div class="max-w-7xl mx-auto flex flex-wrap justify-center gap-6">
+            <span>🚀 Atajos: <kbd class="px-1.5 py-0.5 bg-neutral-800 border border-neutral-700 rounded text-gray-300">Espacio</kbd> Siguiente Turno</span>
+            <span><kbd class="px-1.5 py-0.5 bg-neutral-800 border border-neutral-700 rounded text-gray-300">Enter</kbd> Agregar Participante</span>
+            <span><kbd class="px-1.5 py-0.5 bg-neutral-800 border border-neutral-700 rounded text-gray-300">Supr / Delete</kbd> Eliminar fila seleccionada (clic para seleccionar)</span>
+            <span>🖱️ Arrastra las filas de la tabla para reordenar antes de iniciar combate</span>
+        </div>
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        /* ==========================================
+           MODELO DE DATOS Y ESTADO GLOBAL
+           ========================================== */
+        let state = {
+            participantes: [],
+            turnoIndex: 0,
+            ronda: 1,
+            combateIniciado: false,
+            mostrarAC: true,
+            haySorpresa: false,
+            tema: 'dark',
+            historial: [
+                "Ronda 1 - Sistema listo. Esperando inicio de combate."
+            ]
+        };
+
+        // Selección transitoria de fila en la tabla (no se persiste), usada por el atajo Suprimir
+        let selectedParticipantIndex = null;
+
+        // Al cargar la página
+        window.addEventListener('DOMContentLoaded', () => {
+            cargarLocalStorage();
+            normalizarParticipantes();
+            sincronizarUIConfig();
+            renderTodo();
+            registrarEventosTeclado();
+        });
+
+        // Garantiza que participantes guardados con versiones anteriores tengan todos los campos nuevos
+        function normalizarParticipantes() {
+            state.participantes.forEach((p, i) => {
+                if (!Array.isArray(p.estado)) p.estado = [];
+                if (typeof p.esBoss !== 'boolean') p.esBoss = false;
+                if (typeof p.ordenCaptura !== 'number') p.ordenCaptura = i;
+            });
+            if (state.tema !== 'light' && state.tema !== 'dark') state.tema = 'dark';
+        }
+
+        /* ==========================================
+           GESTIÓN DE LOCALSTORAGE
+           ========================================== */
+        function guardarLocalStorage() {
+            try {
+                localStorage.setItem('ttrpg_combat_state', JSON.stringify(state));
+            } catch (e) {
+                console.error("Error guardando en localStorage", e);
+            }
+        }
+
+        function cargarLocalStorage() {
+            try {
+                const saved = localStorage.getItem('ttrpg_combat_state');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    state = { ...state, ...parsed };
+                }
+            } catch (e) {
+                console.error("Error cargando localStorage", e);
+            }
+        }
+
+        /* ==========================================
+           FUNCIONES PRINCIPALES DE GESTIÓN
+           ========================================== */
+
+        function syncHpActualDefault() {
+            const hpMaxInput = document.getElementById('p-hpmax');
+            const hpActInput = document.getElementById('p-hpact');
+            const editIndex = document.getElementById('edit-index').value;
+            // Solo auto-sincronizar si estamos agregando uno nuevo
+            if (editIndex === "-1") {
+                hpActInput.value = hpMaxInput.value;
+            }
+        }
+
+        function tirarIniciativaAutomatica() {
+            // Usa el campo de modificador inline (sin prompt() ni diálogos bloqueantes)
+            const mod = parseInt(document.getElementById('p-iniciativa-mod').value) || 0;
+            const d20 = Math.floor(Math.random() * 20) + 1;
+            const total = d20 + mod;
+            document.getElementById('p-iniciativa').value = total;
+            mostrarToast(`Tirada automática: d20(${d20}) ${mod >= 0 ? '+' : ''}${mod} = ${total}`, "info");
+        }
+
+        function handleParticipantFormSubmit(event) {
+            event.preventDefault();
+            const nombre = document.getElementById('p-nombre').value.trim();
+            const iniciativa = parseInt(document.getElementById('p-iniciativa').value) || 0;
+            const hpMaximo = parseInt(document.getElementById('p-hpmax').value) || 1;
+            const hpActual = parseInt(document.getElementById('p-hpact').value) || hpMaximo;
+            const ac = parseInt(document.getElementById('p-ac').value) || 10;
+            const tipo = document.querySelector('input[name="p-tipo"]:checked').value;
+            const isBoss = document.getElementById('p-boss').checked;
+            const cantidad = parseInt(document.getElementById('p-cantidad').value) || 1;
+            const editIndex = parseInt(document.getElementById('edit-index').value);
+
+            if (editIndex > -1) {
+                // Editar existente
+                state.participantes[editIndex] = {
+                    ...state.participantes[editIndex],
+                    nombre,
+                    iniciativa,
+                    hpMaximo,
+                    hpActual: Math.min(hpActual, hpMaximo),
+                    ac,
+                    tipo,
+                    esBoss: isBoss,
+                    muerto: hpActual <= 0
+                };
+                registrarEvento(`Participante editado: ${nombre} (Ini: ${iniciativa}, HP: ${hpActual}/${hpMaximo})`);
+                cancelarEdicion();
+                mostrarToast(`Participante "${nombre}" actualizado correctamente.`, "success");
+            } else {
+                // Agregar uno o varios (duplicar monstruos)
+                for (let i = 0; i < cantidad; i++) {
+                    const suffix = cantidad > 1 ? ` #${i + 1}` : '';
+                    const nuevo = {
+                        id: 'part_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+                        nombre: nombre + suffix,
+                        iniciativa,
+                        hpMaximo,
+                        hpActual: Math.min(hpActual, hpMaximo),
+                        ac,
+                        tipo,
+                        esBoss: isBoss,
+                        muerto: hpActual <= 0,
+                        ordenCaptura: state.participantes.length + i,
+                        estado: []
+                    };
+                    state.participantes.push(nuevo);
+                }
+                registrarEvento(`Participante(s) agregado(s): ${nombre} (x${cantidad})`);
+                mostrarToast(`Se agregó a ${nombre}${cantidad > 1 ? ' (' + cantidad + ')' : ''}.`, "success");
+                document.getElementById('participant-form').reset();
+                document.getElementById('p-hpmax').value = 20;
+                document.getElementById('p-hpact').value = 20;
+                document.getElementById('p-ac').value = 10;
+                document.getElementById('p-cantidad').value = 1;
+                document.getElementById('p-boss').checked = false;
+                document.getElementById('p-iniciativa-mod').value = 0;
+            }
+
+            // Si el combate ya estaba iniciado, reordenar si es necesario o mantener
+            if (state.combateIniciado) {
+                ordenarIniciativas();
+            }
+
+            guardarLocalStorage();
+            renderTodo();
+        }
+
+        function editarParticipante(index) {
+            const p = state.participantes[index];
+            if (!p) return;
+
+            document.getElementById('p-nombre').value = p.nombre;
+            document.getElementById('p-iniciativa').value = p.iniciativa;
+            document.getElementById('p-hpmax').value = p.hpMaximo;
+            document.getElementById('p-hpact').value = p.hpActual;
+            document.getElementById('p-ac').value = p.ac;
+            document.getElementById('p-boss').checked = !!p.esBoss;
+            
+            const radios = document.querySelectorAll('input[name="p-tipo"]');
+            radios.forEach(r => {
+                r.checked = (r.value === p.tipo);
+            });
+
+            document.getElementById('edit-index').value = index;
+            document.getElementById('btn-submit-participant').innerHTML = `<span>Actualizar Participante</span>`;
+            document.getElementById('btn-cancel-edit').classList.remove('hidden');
+
+            // Señal visual: el panel del formulario "se ilumina" para que el usuario note
+            // dónde aparecieron los datos del participante que va a editar.
+            const panel = document.getElementById('add-participant-panel');
+            panel.classList.remove('form-signal');
+            void panel.offsetWidth; // fuerza reflow para poder reiniciar la animación si se pulsa Editar varias veces seguidas
+            panel.classList.add('form-signal');
+            setTimeout(() => panel.classList.remove('form-signal'), 1600);
+
+            // Scroll to form
+            document.getElementById('participant-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function cancelarEdicion() {
+            document.getElementById('edit-index').value = "-1";
+            document.getElementById('participant-form').reset();
+            document.getElementById('p-hpmax').value = 20;
+            document.getElementById('p-hpact').value = 20;
+            document.getElementById('p-ac').value = 10;
+            document.getElementById('p-boss').checked = false;
+            document.getElementById('p-iniciativa-mod').value = 0;
+            document.getElementById('btn-submit-participant').innerHTML = `<span>Agregar Participante</span>`;
+            document.getElementById('btn-cancel-edit').classList.add('hidden');
+        }
+
+        function eliminarParticipante(index) {
+            const p = state.participantes[index];
+            if (!p) return;
+
+            abrirModalConfirmacion("Eliminar Participante", `¿Seguro que deseas eliminar a ${p.nombre} del combate?`, () => {
+                state.participantes.splice(index, 1);
+                selectedParticipantIndex = null;
+
+                // Ajustar turno index si es necesario
+                if (state.turnoIndex >= state.participantes.length && state.participantes.length > 0) {
+                    state.turnoIndex = 0;
+                }
+                
+                registrarEvento(`Participante eliminado: ${p.nombre}`);
+                mostrarToast(`Participante eliminado.`, "info");
+                
+                guardarLocalStorage();
+                renderTodo();
+            });
+        }
+
+        function ordenarIniciativas() {
+            // Ordenar por iniciativa de mayor a menor. Si es igual, conservar orden de captura original.
+            state.participantes.sort((a, b) => {
+                if (b.iniciativa !== a.iniciativa) {
+                    return b.iniciativa - a.iniciativa;
+                }
+                return a.ordenCaptura - b.ordenCaptura;
+            });
+        }
+
+        function iniciarCombate() {
+            if (state.participantes.length === 0) {
+                mostrarToast("Agrega al menos un participante para iniciar el combate.", "error");
+                return;
+            }
+
+            ordenarIniciativas();
+            state.combateIniciado = true;
+            state.turnoIndex = 0;
+
+            const haySorpresaCheckbox = document.getElementById('surprise-checkbox').checked;
+            state.haySorpresa = haySorpresaCheckbox;
+            state.ronda = haySorpresaCheckbox ? 0 : 1;
+
+            registrarEvento(`¡Combate iniciado! Ronda ${state.ronda}${haySorpresaCheckbox ? ' (Con Sorpresa)' : ''}.`);
+            mostrarToast("¡Combate iniciado con éxito!", "success");
+
+            guardarLocalStorage();
+            renderTodo();
+            desplazarHaciaTurnoActivo();
+        }
+
+        function siguienteTurno() {
+            if (!state.combateIniciado || state.participantes.length === 0) return;
+
+            // Avanzar turno
+            state.turnoIndex++;
+            if (state.turnoIndex >= state.participantes.length) {
+                state.turnoIndex = 0;
+                state.ronda++;
+                registrarEvento(`--- Fin de ronda. Iniciando Ronda ${state.ronda} ---`);
+            }
+
+            const activo = state.participantes[state.turnoIndex];
+            registrarEvento(`Ronda ${state.ronda} - Turno de ${activo ? activo.nombre : 'Desconocido'}`);
+            if (activo) decrementarEstados(activo);
+
+            guardarLocalStorage();
+            renderTodo();
+            desplazarHaciaTurnoActivo();
+        }
+
+        // Lleva la vista automáticamente hacia la tarjeta del participante en turno.
+        // Solo se invoca tras avanzar de turno o iniciar combate; si el usuario mueve
+        // el scroll manualmente en otro momento, no se le interrumpe ni se le fuerza a volver.
+        function desplazarHaciaTurnoActivo() {
+            const card = document.getElementById(`combat-card-${state.turnoIndex}`);
+            if (card) card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function aplicarDanio(index, cantidadCustom = null) {
+            const p = state.participantes[index];
+            if (!p) return;
+
+            const inputElem = document.getElementById(`dmg-input-${index}`);
+            const cantidad = cantidadCustom !== null ? cantidadCustom : (parseInt(inputElem.value) || 0);
+
+            if (cantidad <= 0) return;
+
+            p.hpActual = Math.max(0, p.hpActual - cantidad);
+            if (p.hpActual === 0 && !p.muerto) {
+                p.muerto = true;
+                registrarEvento(`💀 ¡${p.nombre} ha muerto!`);
+                mostrarToast(`${p.nombre} ha caído en combate.`, "error");
+            } else {
+                registrarEvento(`${p.nombre} recibió ${cantidad} de daño. HP Actual: ${p.hpActual}/${p.hpMaximo}`);
+            }
+
+            if (inputElem && cantidadCustom === null) {
+                inputElem.value = "";
+            }
+
+            guardarLocalStorage();
+            renderTodo();
+            destellarTarjeta(index, 'flash-damage');
+        }
+
+        // Aplica un breve destello de color sobre la tarjeta del participante (confirmación visual)
+        function destellarTarjeta(index, claseAnimacion) {
+            const card = document.getElementById(`combat-card-${index}`);
+            if (!card) return;
+            card.classList.remove('flash-damage', 'flash-heal');
+            // Forzar reflow para poder reiniciar la animación si se aplica varias veces seguidas
+            void card.offsetWidth;
+            card.classList.add(claseAnimacion);
+            setTimeout(() => card.classList.remove(claseAnimacion), 650);
+        }
+
+        function aplicarCura(index, cantidadCustom = null) {
+            const p = state.participantes[index];
+            if (!p) return;
+
+            const inputElem = document.getElementById(`dmg-input-${index}`);
+            const cantidad = cantidadCustom !== null ? cantidadCustom : (parseInt(inputElem.value) || 0);
+
+            if (cantidad <= 0) return;
+
+            const hpAnterior = p.hpActual;
+            p.hpActual = Math.min(p.hpMaximo, p.hpActual + cantidad);
+            const curadoReal = p.hpActual - hpAnterior;
+
+            if (p.muerto && p.hpActual > 0) {
+                p.muerto = false;
+                registrarEvento(`✨ ${p.nombre} ha sido revivido.`);
+            }
+
+            registrarEvento(`${p.nombre} recuperó ${curadoReal} de HP. HP Actual: ${p.hpActual}/${p.hpMaximo}`);
+
+            if (inputElem && cantidadCustom === null) {
+                inputElem.value = "";
+            }
+
+            guardarLocalStorage();
+            renderTodo();
+            destellarTarjeta(index, 'flash-heal');
+        }
+
+        function toggleMostrarAC() {
+            state.mostrarAC = !state.mostrarAC;
+            const btn = document.getElementById('btn-toggle-ac');
+            btn.innerText = state.mostrarAC ? "Ocultar AC" : "Mostrar AC";
+            registrarEvento(`Configuración: AC ${state.mostrarAC ? 'Visible' : 'Oculta'}`);
+            guardarLocalStorage();
+            renderTodo();
+        }
+
+        function registrarEvento(texto) {
+            const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            state.historial.unshift(`[${timestamp}] ${texto}`);
+            if (state.historial.length > 100) state.historial.pop(); // Limitar historial en memoria
+            renderHistorial();
+        }
+
+        function limpiarHistorial() {
+            state.historial = ["[Sistema] Historial limpiado."];
+            renderHistorial();
+            mostrarToast("Consola de eventos limpiada.", "info");
+        }
+
+        function nuevoCombate() {
+            abrirModalConfirmacion("Nuevo Combate", "¿Estás seguro de reiniciar todo el combate? Se borrarán todos los participantes y el historial.", () => {
+                state.participantes = [];
+                state.turnoIndex = 0;
+                state.ronda = 1;
+                state.combateIniciado = false;
+                state.haySorpresa = false;
+                state.historial = ["[Sistema] Nuevo combate iniciado desde cero."];
+                selectedParticipantIndex = null;
+
+                guardarLocalStorage();
+                renderTodo();
+                cancelarEdicion();
+                mostrarToast("Combate reiniciado por completo.", "success");
+            });
+        }
+
+        /* ==========================================
+           EXPORTACIÓN E IMPORTACIÓN
+           ========================================== */
+        function exportarTXT() {
+            const contenido = state.historial.join('\n');
+            const blob = new Blob([contenido], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `historial_combate_${new Date().toISOString().slice(0,10)}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            mostrarToast("Historial exportado como TXT.", "success");
+        }
+
+        function exportarJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+            const a = document.createElement('a');
+            a.href = dataStr;
+            a.download = `combate_ttrpg_backup_${new Date().toISOString().slice(0,10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            mostrarToast("Combate exportado como JSON.", "success");
+        }
+
+        function importarJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if (parsed && Array.isArray(parsed.participantes)) {
+                        state = { ...state, ...parsed };
+                        normalizarParticipantes();
+                        selectedParticipantIndex = null;
+                        sincronizarUIConfig();
+                        guardarLocalStorage();
+                        renderTodo();
+                        registrarEvento("[Sistema] Combate importado exitosamente desde archivo JSON.");
+                        mostrarToast("¡Combate importado correctamente!", "success");
+                    } else {
+                        throw new Error("Formato inválido");
+                    }
+                } catch (err) {
+                    mostrarToast("Error al importar el archivo JSON. Formato no válido.", "error");
+                }
+                event.target.value = ""; // Reset input
+            };
+            reader.readAsText(file);
+        }
+
+        /* ==========================================
+           RENDERIZADO Y UI
+           ========================================== */
+        function renderTodo() {
+            renderRoundAndStatus();
+            renderTabla();
+            renderTarjetas();
+            renderHistorial();
+        }
+
+        function sincronizarUIConfig() {
+            document.getElementById('btn-toggle-ac').innerText = state.mostrarAC ? "Ocultar AC" : "Mostrar AC";
+            document.getElementById('surprise-checkbox').checked = state.haySorpresa;
+            document.documentElement.setAttribute('data-theme', state.tema);
+            document.getElementById('btn-toggle-tema').innerText = state.tema === 'light' ? "☀️ Claro" : "🌙 Oscuro";
+        }
+
+        function toggleTema() {
+            state.tema = (state.tema === 'light') ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', state.tema);
+            document.getElementById('btn-toggle-tema').innerText = state.tema === 'light' ? "☀️ Claro" : "🌙 Oscuro";
+            guardarLocalStorage();
+            mostrarToast(`Tema ${state.tema === 'light' ? 'claro' : 'oscuro'} activado.`, "info");
+        }
+
+        function renderRoundAndStatus() {
+            const roundLabel = document.getElementById('round-display-label');
+            const statusBadge = document.getElementById('combat-status-badge');
+            const btnIniciar = document.getElementById('btn-iniciar');
+            const btnNext = document.getElementById('btn-next-turn');
+            const subtitle = document.getElementById('combat-subtitle');
+            const progressBar = document.getElementById('combat-progress-bar');
+
+            roundLabel.innerText = `Ronda ${state.ronda}`;
+
+            if (state.combateIniciado) {
+                statusBadge.innerText = "En Combate";
+                statusBadge.className = "px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-accent/20 text-accent border border-accent/40";
+                btnIniciar.innerText = "Reiniciar Orden";
+                btnNext.disabled = false;
+                btnNext.className = "px-6 py-2.5 bg-accent hover:bg-accenthover text-darkbg font-bold rounded-xl text-sm transition-all flex items-center gap-2 shadow-lg shadow-accent/20 cursor-pointer";
+                
+                const activo = state.participantes[state.turnoIndex];
+                subtitle.innerText = activo ? `Turno activo: ${activo.nombre}` : "Combate activo";
+
+                // Progress bar
+                if (state.participantes.length > 0) {
+                    const pct = ((state.turnoIndex + 1) / state.participantes.length) * 100;
+                    progressBar.style.width = `${pct}%`;
+                }
+            } else {
+                statusBadge.innerText = "Preparación";
+                statusBadge.className = "px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-neutral-800 text-gray-400";
+                btnIniciar.innerText = "Iniciar Combate";
+                btnNext.disabled = true;
+                btnNext.className = "px-6 py-2.5 bg-neutral-800 text-neutral-500 cursor-not-allowed font-bold rounded-xl text-sm transition-all flex items-center gap-2";
+                subtitle.innerText = "Inicia el combate para activar el control de turnos";
+                progressBar.style.width = '0%';
+            }
+        }
+
+        function renderTabla() {
+            const tbody = document.getElementById('participants-table-body');
+            const emptyNotice = document.getElementById('table-empty-notice');
+            const countSpan = document.getElementById('participant-count');
+            const searchQuery = document.getElementById('search-filter').value.toLowerCase();
+            const filterType = document.getElementById('filter-type').value;
+
+            tbody.innerHTML = '';
+            countSpan.innerText = state.participantes.length;
+
+            const filtered = state.participantes.map((p, idx) => ({ p, originalIndex: idx })).filter(({ p }) => {
+                const matchName = p.nombre.toLowerCase().includes(searchQuery);
+                const matchType = (filterType === 'todos' || p.tipo === filterType);
+                return matchName && matchType;
+            });
+
+            if (filtered.length === 0) {
+                emptyNotice.classList.remove('hidden');
+            } else {
+                emptyNotice.classList.add('hidden');
+            }
+
+            const permitirArrastre = !state.combateIniciado;
+
+            filtered.forEach(({ p, originalIndex }) => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-neutral-900/60 transition-colors" + (originalIndex === selectedParticipantIndex ? " row-selected" : "");
+                tr.dataset.index = originalIndex;
+                tr.addEventListener('click', (e) => {
+                    // Evitar seleccionar la fila al pulsar un botón de acción
+                    if (e.target.closest('button')) return;
+                    selectedParticipantIndex = (selectedParticipantIndex === originalIndex) ? null : originalIndex;
+                    renderTabla();
+                });
+
+                if (permitirArrastre) {
+                    tr.draggable = true;
+                    tr.addEventListener('dragstart', () => { tr.classList.add('dragging'); tr.dataset.dragging = originalIndex; });
+                    tr.addEventListener('dragend', () => { tr.classList.remove('dragging'); document.querySelectorAll('tr.drag-over').forEach(el => el.classList.remove('drag-over')); });
+                    tr.addEventListener('dragover', (e) => { e.preventDefault(); tr.classList.add('drag-over'); });
+                    tr.addEventListener('dragleave', () => tr.classList.remove('drag-over'));
+                    tr.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        tr.classList.remove('drag-over');
+                        const origen = parseInt(e.dataTransfer.getData('text/plain'));
+                        reordenarParticipante(origen, originalIndex);
+                    });
+                    tr.addEventListener('dragstart', (e) => e.dataTransfer.setData('text/plain', originalIndex));
+                }
+
+                let tipoColor = "text-pcblue";
+                if (p.tipo === 'Enemigo') tipoColor = "text-enmyred";
+                if (p.tipo === 'Aliado') tipoColor = "text-allygreen";
+
+                tr.innerHTML = `
+                    <td class="p-2.5 text-center drag-handle" title="${permitirArrastre ? 'Arrastra para reordenar' : ''}">${permitirArrastre ? '⋮⋮' : ''}</td>
+                    <td class="p-2.5 font-medium text-gray-200 flex items-center gap-1.5">
+                        ${p.muerto ? '💀 ' : ''}${p.esBoss ? '👑 ' : ''}
+                        <span class="${p.muerto ? 'line-through text-gray-500' : ''}">${p.nombre}</span>
+                    </td>
+                    <td class="p-2.5 text-center font-bold text-accent">${p.iniciativa}</td>
+                    <td class="p-2.5 text-center text-gray-300">${p.hpActual} / ${p.hpMaximo}</td>
+                    <td class="p-2.5 text-center text-gray-400 ac-cell">${state.mostrarAC ? p.ac : '--'}</td>
+                    <td class="p-2.5 text-center font-semibold ${tipoColor}">${p.tipo}</td>
+                    <td class="p-2.5 text-right space-x-1">
+                        <button onclick="editarParticipante(${originalIndex})" class="px-2 py-1 bg-neutral-800 hover:bg-neutral-700 text-gray-300 rounded text-[11px] transition-colors">Editar</button>
+                        <button onclick="eliminarParticipante(${originalIndex})" class="px-2 py-1 bg-neutral-800 hover:bg-red-900/50 hover:text-red-400 text-gray-400 rounded text-[11px] transition-colors">Borrar</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Reordena participantes por drag & drop (solo antes de iniciar combate)
+        function reordenarParticipante(origenIndex, destinoIndex) {
+            if (isNaN(origenIndex) || origenIndex === destinoIndex || state.combateIniciado) return;
+            const [movido] = state.participantes.splice(origenIndex, 1);
+            state.participantes.splice(destinoIndex, 0, movido);
+            // Reasignar orden de captura para mantener criterio de desempate consistente
+            state.participantes.forEach((p, i) => p.ordenCaptura = i);
+            selectedParticipantIndex = null;
+            registrarEvento(`Orden manual actualizado: ${movido.nombre} movido a la posición ${destinoIndex + 1}.`);
+            guardarLocalStorage();
+            renderTodo();
+        }
+
+        function renderTarjetas() {
+            const container = document.getElementById('combat-cards-container');
+            container.innerHTML = '';
+
+            if (state.participantes.length === 0) {
+                container.innerHTML = `<div class="text-center py-12 text-gray-500 text-xs">No hay participantes registrados.</div>`;
+                return;
+            }
+
+            state.participantes.forEach((p, idx) => {
+                const esTurnoActual = state.combateIniciado && (idx === state.turnoIndex);
+                
+                // Color de borde y tarjeta según tipo y turno
+                let borderColor = "border-neutral-800";
+                let badgeBg = "bg-pcblue/20 text-pcblue border-pcblue/30";
+                if (p.tipo === 'Enemigo') badgeBg = "bg-enmyred/20 text-enmyred border-enmyred/30";
+                if (p.tipo === 'Aliado') badgeBg = "bg-allygreen/20 text-allygreen border-allygreen/30";
+
+                if (p.muerto) {
+                    borderColor = "border-deadgray/40 opacity-60 bg-neutral-950";
+                } else if (esTurnoActual) {
+                    borderColor = "turn-highlight border-accent bg-neutral-900";
+                } else if (p.esBoss) {
+                    borderColor = "boss-card";
+                }
+
+                // Cálculo HP Bar y Color
+                const hpPercent = Math.max(0, Math.min(100, Math.round((p.hpActual / p.hpMaximo) * 100)));
+                let barColor = "bg-allygreen";
+                if (hpPercent <= 25) barColor = "bg-enmyred";
+                else if (hpPercent <= 50) barColor = "bg-yellow-500";
+                else if (hpPercent <= 75) barColor = "bg-amber-400";
+
+                const cardHtml = document.createElement('div');
+                cardHtml.id = `combat-card-${idx}`;
+                cardHtml.className = `border rounded-xl p-3.5 transition-all duration-300 ${borderColor} relative`;
+
+                cardHtml.innerHTML = `
+                    ${p.esBoss && !p.muerto ? '<div class="absolute -top-2.5 left-4 bg-neutral-900 text-accent text-[10px] font-extrabold px-2 py-0.5 rounded shadow border border-accent/40 uppercase tracking-wider">👑 BOSS</div>' : ''}
+                    
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                        
+                        <!-- Info Principal -->
+                        <div class="flex items-center space-x-3">
+                            <div class="flex flex-col items-center justify-center bg-neutral-950 border border-neutral-800 rounded-lg w-10 h-10 shrink-0">
+                                <span class="text-[9px] text-gray-500 uppercase leading-none">Ini</span>
+                                <span class="text-xs font-bold text-accent">${p.iniciativa}</span>
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h3 class="font-bold text-sm text-gray-200 ${p.muerto ? 'line-through text-gray-500' : ''}">${p.nombre}</h3>
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-semibold border ${badgeBg}">${p.tipo}</span>
+                                    ${p.muerto ? '<span class="text-xs">💀 Muerto</span>' : ''}
+                                </div>
+                                <div class="flex items-center space-x-4 text-xs text-gray-400 mt-0.5">
+                                    <span>HP: <strong class="text-gray-200">${p.hpActual}</strong> / ${p.hpMaximo}</span>
+                                    <span>AC: <strong class="text-gray-200">${state.mostrarAC ? p.ac : '--'}</strong></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Controles de Daño / Cura Rápidos -->
+                        <div class="flex items-center space-x-2 w-full sm:w-auto justify-end">
+                            <div class="flex items-center space-x-1">
+                                <input type="number" id="dmg-input-${idx}" min="1" placeholder="Cant" class="w-16 bg-neutral-950 border border-neutral-700/80 rounded px-2 py-1 text-xs text-center text-gray-200 focus:outline-none focus:border-accent">
+                                <button onclick="aplicarDanio(${idx})" class="px-2.5 py-1 bg-red-950/60 hover:bg-red-900 text-red-400 border border-red-800/50 rounded text-xs font-bold transition-colors" title="Aplicar Daño">- Daño</button>
+                                <button onclick="aplicarCura(${idx})" class="px-2.5 py-1 bg-emerald-950/60 hover:bg-emerald-900 text-emerald-400 border border-emerald-800/50 rounded text-xs font-bold transition-colors" title="Curar">+ Curar</button>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Barra de HP Visual -->
+                    <div class="mt-3 w-full bg-neutral-950 rounded-full h-2 overflow-hidden border border-neutral-800">
+                        <div class="${barColor} h-full transition-all duration-300" style="width: ${hpPercent}%"></div>
+                    </div>
+
+                    <!-- Estados / Efectos Activos -->
+                    <div class="mt-3 flex flex-wrap items-center gap-1.5">
+                        ${(p.estado || []).map((ef, efIdx) => `
+                            <span class="status-pill">
+                                ${ef.nombre}${ef.duracion !== null ? ` (${ef.duracion})` : ''}
+                                <button type="button" onclick="quitarEstado(${idx}, ${efIdx})" title="Quitar estado">×</button>
+                            </span>
+                        `).join('')}
+                        <div class="flex items-center gap-1">
+                            <select id="estado-select-${idx}" class="bg-neutral-950 border border-neutral-700/80 rounded px-1.5 py-1 text-[10px] text-gray-300 focus:outline-none focus:border-accent">
+                                <option value="Concentrando">Concentrando</option>
+                                <option value="Aturdido">Aturdido</option>
+                                <option value="Envenenado">Envenenado</option>
+                                <option value="Asustado">Asustado</option>
+                                <option value="Derribado">Derribado</option>
+                                <option value="Agarrado">Agarrado</option>
+                                <option value="Cegado">Cegado</option>
+                                <option value="Paralizado">Paralizado</option>
+                                <option value="Otro">Otro...</option>
+                            </select>
+                            <input type="number" id="estado-duracion-${idx}" min="1" placeholder="Rondas" title="Duración en rondas (vacío = indefinido)" class="w-14 bg-neutral-950 border border-neutral-700/80 rounded px-1 py-1 text-[10px] text-center text-gray-300 focus:outline-none focus:border-accent">
+                            <button type="button" onclick="agregarEstado(${idx})" class="px-2 py-1 bg-neutral-800 hover:bg-neutral-700 text-accent border border-neutral-700 rounded text-[10px] font-bold" title="Añadir estado">+</button>
+                        </div>
+                    </div>
+
+                    ${esTurnoActual ? `
+                    <div class="mt-3 flex items-center justify-center gap-2 bg-accent text-darkbg text-xs font-extrabold uppercase tracking-wider rounded-lg py-2 shadow-lg shadow-accent/30">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        Turno Actual
+                    </div>` : ''}
+                `;
+                container.appendChild(cardHtml);
+            });
+        }
+
+        /* ==========================================
+           GESTIÓN DE ESTADOS / EFECTOS TEMPORALES
+           ========================================== */
+
+        // Añade un estado (efecto) a un participante, con duración opcional en rondas
+        function agregarEstado(index) {
+            const p = state.participantes[index];
+            if (!p) return;
+            const select = document.getElementById(`estado-select-${index}`);
+            const duracionInput = document.getElementById(`estado-duracion-${index}`);
+            let nombreEstado = select.value;
+
+            if (nombreEstado === 'Otro') {
+                nombreEstado = prompt('Nombre del estado personalizado:');
+                if (!nombreEstado || !nombreEstado.trim()) return;
+                nombreEstado = nombreEstado.trim();
+            }
+
+            const duracion = duracionInput.value ? Math.max(1, parseInt(duracionInput.value)) : null;
+
+            if (!Array.isArray(p.estado)) p.estado = [];
+            p.estado.push({ nombre: nombreEstado, duracion });
+
+            registrarEvento(`${p.nombre} ahora tiene el estado "${nombreEstado}"${duracion ? ` (${duracion} rondas)` : ''}.`);
+            duracionInput.value = '';
+
+            guardarLocalStorage();
+            renderTodo();
+        }
+
+        // Quita manualmente un estado de un participante
+        function quitarEstado(index, estadoIdx) {
+            const p = state.participantes[index];
+            if (!p || !Array.isArray(p.estado) || !p.estado[estadoIdx]) return;
+            const nombreEstado = p.estado[estadoIdx].nombre;
+            p.estado.splice(estadoIdx, 1);
+            registrarEvento(`${p.nombre} ya no tiene el estado "${nombreEstado}".`);
+            guardarLocalStorage();
+            renderTodo();
+        }
+
+        // Decrementa la duración de los estados de un participante al comenzar su turno; elimina los que expiran
+        function decrementarEstados(participante) {
+            if (!participante || !Array.isArray(participante.estado) || participante.estado.length === 0) return;
+            const restantes = [];
+            participante.estado.forEach(ef => {
+                if (ef.duracion === null) { restantes.push(ef); return; }
+                const nuevaDuracion = ef.duracion - 1;
+                if (nuevaDuracion <= 0) {
+                    registrarEvento(`El estado "${ef.nombre}" de ${participante.nombre} ha expirado.`);
+                } else {
+                    restantes.push({ nombre: ef.nombre, duracion: nuevaDuracion });
+                }
+            });
+            participante.estado = restantes;
+        }
+
+        function renderHistorial() {
+            const consoleDiv = document.getElementById('history-console');
+            consoleDiv.innerHTML = '';
+            state.historial.forEach(line => {
+                const div = document.createElement('div');
+                div.className = "text-gray-300 leading-relaxed";
+                div.innerText = line;
+                consoleDiv.appendChild(div);
+            });
+            consoleDiv.scrollTop = 0;
+        }
+
+        /* ==========================================
+           MODAL DE CONFIRMACIÓN & TOASTS
+           ========================================== */
+        let confirmCallback = null;
+
+        function abrirModalConfirmacion(titulo, mensaje, onOk) {
+            document.getElementById('confirm-title').innerText = titulo;
+            document.getElementById('confirm-message').innerText = mensaje;
+            document.getElementById('confirm-modal').classList.remove('hidden');
+            confirmCallback = onOk;
+        }
+
+        document.getElementById('confirm-cancel').addEventListener('click', () => {
+            document.getElementById('confirm-modal').classList.add('hidden');
+            confirmCallback = null;
+        });
+
+        document.getElementById('confirm-ok').addEventListener('click', () => {
+            if (confirmCallback) confirmCallback();
+            document.getElementById('confirm-modal').classList.add('hidden');
+            confirmCallback = null;
+        });
+
+        function mostrarToast(mensaje, tipo = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            let bgClass = "bg-neutral-900 border-accent/50 text-accent";
+            if (tipo === 'error') bgClass = "bg-red-950 border-red-800 text-red-300";
+            if (tipo === 'info') bgClass = "bg-neutral-900 border-neutral-700 text-gray-200";
+
+            toast.className = `pointer-events-auto px-4 py-3 rounded-xl border shadow-xl text-xs font-semibold flex items-center space-x-2 transition-all transform translate-y-2 opacity-0 ${bgClass}`;
+            toast.innerHTML = `<span>${mensaje}</span>`;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        /* ==========================================
+           ATAJOS DE TECLADO
+           ========================================== */
+        function registrarEventosTeclado() {
+            window.addEventListener('keydown', (e) => {
+                // Evitar atajos si estamos escribiendo dentro de inputs o textareas
+                if (['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+                    if (e.key === 'Enter') {
+                        // Si está en el formulario de participantes, dejar que envíe o agregar
+                        if (document.activeElement.id.startsWith('p-') || document.activeElement.id === 'search-filter') {
+                            // Dejar comportamiento natural o submit
+                        }
+                    }
+                    return;
+                }
+
+                if (e.code === 'Space') {
+                    e.preventDefault();
+                    if (state.combateIniciado) {
+                        siguienteTurno();
+                    }
+                }
+
+                if (e.code === 'Delete' || e.code === 'Backspace') {
+                    // Elimina el participante seleccionado (clic en su fila) antes de iniciar combate
+                    if (!state.combateIniciado && state.participantes.length > 0) {
+                        e.preventDefault();
+                        if (selectedParticipantIndex !== null && state.participantes[selectedParticipantIndex]) {
+                            eliminarParticipante(selectedParticipantIndex);
+                        } else {
+                            mostrarToast("Selecciona una fila en la tabla para eliminarla con Supr.", "info");
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
