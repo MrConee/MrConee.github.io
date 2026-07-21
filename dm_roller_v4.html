@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DM Mass Roller - Tactical Engine v3.5</title>
+    <style>
+        :root {
+            --bg-main: #0d0f12;
+            --bg-card: #161922;
+            --bg-input: #1e222d;
+            --primary: #f97316;
+            --primary-hover: #ea580c;
+            --success: #10b981;
+            --info: #0284c7;
+            --danger: #ef4444;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --border-color: #2a2e39;
+        }
+
+        body { 
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; 
+            background: var(--bg-main); 
+            color: var(--text-main); 
+            margin: 0; 
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 850px;
+        }
+
+        h2, h3 { 
+            color: var(--primary); 
+            margin-top: 20px; 
+            margin-bottom: 10px; 
+            border-bottom: 2px solid var(--border-color); 
+            padding-bottom: 6px;
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card { 
+            background: var(--bg-card); 
+            padding: 20px; 
+            border-radius: 12px; 
+            margin-bottom: 20px; 
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+
+        @media (max-width: 600px) {
+            .grid-3, .grid-2 { grid-template-columns: 1fr; }
+        }
+
+        label {
+            font-size: 11px;
+            color: var(--text-muted);
+            display: block;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .tooltip-icon {
+            background: #374151;
+            color: #d1d5db;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 15px;
+            height: 15px;
+            font-size: 10px;
+            cursor: help;
+            margin-left: 4px;
+        }
+
+        input { 
+            padding: 10px 12px; 
+            margin-bottom: 10px; 
+            border-radius: 6px; 
+            border: 1px solid var(--border-color); 
+            background: var(--bg-input); 
+            color: #fff; 
+            width: 100%; 
+            box-sizing: border-box; 
+            font-size: 14px; 
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15);
+        }
+
+        button { 
+            padding: 12px 16px; 
+            border-radius: 6px; 
+            background: var(--primary); 
+            color: #fff; 
+            font-weight: 600; 
+            border: none; 
+            cursor: pointer; 
+            width: 100%;
+            transition: background 0.2s, transform 0.1s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        button:hover { background: var(--primary-hover); }
+        button:active { transform: translateY(1px); }
+
+        .btn-secundario { background: var(--info); }
+        .btn-secundario:hover { background: #026aa7; }
+        
+        .btn-danger { background: var(--danger); }
+        .btn-danger:hover { background: #dc2626; }
+        
+        .btn-execute { 
+            background: #0d9488; 
+            font-size: 1.15rem; 
+            padding: 16px; 
+            border-radius: 8px; 
+            letter-spacing: 0.5px;
+        }
+        .btn-execute:hover { background: #0f766e; }
+
+        .template-chip { 
+            background: #12151c; 
+            padding: 12px 16px; 
+            border-radius: 8px; 
+            margin: 8px 0; 
+            border: 1px solid var(--border-color); 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            gap: 10px;
+        }
+
+        .subject-row { 
+            border-left: 4px solid var(--primary); 
+            padding: 12px; 
+            margin-bottom: 12px; 
+            background: #12151c; 
+            border-radius: 6px; 
+            border-top: 1px solid var(--border-color);
+            border-right: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        #output { 
+            background: #08090c; 
+            padding: 16px; 
+            height: 320px; 
+            overflow-y: auto; 
+            font-family: 'Consolas', 'Courier New', monospace; 
+            font-size: 13px; 
+            border-radius: 6px; 
+            border: 1px solid var(--border-color); 
+            white-space: pre-wrap; 
+            color: #d1d5db;
+            line-height: 1.5;
+        }
+
+        .log-hit { color: var(--success); font-weight: bold; }
+        .log-crit { color: #facc15; font-weight: bold; background: rgba(250, 204, 21, 0.15); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(250, 204, 21, 0.3); }
+        .log-miss { color: #6b7280; }
+        .log-header { color: var(--primary); font-weight: bold; border-bottom: 1px dashed var(--border-color); padding-bottom: 4px; margin-top: 10px; }
+        .log-total { color: var(--success); font-size: 15px; font-weight: bold; border-top: 2px solid var(--success); padding-top: 8px; margin-top: 8px; }
+
+        .cheat-sheet {
+            font-size: 12px;
+            color: var(--text-muted);
+            background: #12151c;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 12px;
+            border: 1px dashed var(--border-color);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- 1. CREACIÓN DE TEMPLATES -->
+    <h3>⚔️ 1. Configurar y Guardar Plantilla de NPC <span class="tooltip-icon" title="Crea un perfil reutilizable para tus monstruos. Se guardará permanentemente en este dispositivo.">?</span></h3>
+    <div class="card">
+        <input type="text" id="t_name" placeholder="Nombre (Ej: Frost Worm)">
+        <div class="grid-3">
+            <div>
+                <label>Ataque Base <span class="tooltip-icon" title="Bono base del bloque de estadísticas + Extras estáticos (ej: Bendiciones).">?</span></label>
+                <input type="number" id="t_atkBonus" placeholder="Bono (Ej: 5)">
+                <input type="number" id="t_atkExtras" placeholder="Extras (Ej: 2)" value="0">
+            </div>
+            <div>
+                <label>Daño de Armas <span class="tooltip-icon" title="Dados que se duplicarán si cae un 20 natural + el modificador de fuerza/destreza.">?</span></label>
+                <input type="text" id="t_dmgDados" placeholder="Dados (Ej: 2d6)">
+                <input type="number" id="t_dmgBono" placeholder="Bono (Ej: 4)">
+            </div>
+            <div>
+                <label>Daño Adicional <span class="tooltip-icon" title="Daños planos que NO se duplican en críticos (Ej: +3 de fuego continuo).">?</span></label>
+                <input type="number" id="t_dmgExtras" placeholder="Extras (Ej: 3)" value="0">
+            </div>
+        </div>
+        <button class="btn-secundario" onclick="saveTemplate()">Guardar en Mis Plantillas</button>
+    </div>
+
+    <!-- 2. CATÁLOGO DE PLANTILLAS -->
+    <h3>📜 2. Mis Plantillas Disponibles</h3>
+    <div id="templatesContainer" class="card"></div>
+
+    <!-- 3. MESA DE COMBATE ACTIVA -->
+    <h3>🛡️ 3. Mesa de Combate Activa</h3>
+    <div class="card">
+        <div class="grid-2" style="margin-bottom: 12px;">
+            <div>
+                <label style="color: var(--primary); font-size: 12px;">Clase de Armadura (CA) Objetivo</label>
+                <input type="number" id="combat_ac" placeholder="CA a superar (Ej: 16)" style="font-size: 16px; font-weight: bold; border-color: var(--primary);">
+            </div>
+            <div style="display: flex; align-items: flex-end;">
+                <button onclick="clearMesa()" class="btn-danger" style="height: 42px;">Vaciar Mesa</button>
+            </div>
+        </div>
+        
+        <div id="mesaActivaContainer" style="margin-bottom: 15px;"></div>
+        
+        <button class="btn-execute" onclick="ejecutarRondaMasiva()">🔥 ¡EJECUTAR ATAQUE MASIVO (1-CLIC)!</button>
+    </div>
+
+    <!-- 4. INFORME Y LOG DE SALIDA -->
+    <h3>📊 4. Informe Táctico de Resultados</h3>
+    <div class="card">
+        <div id="output">Los resultados de la ejecución aparecerán aquí ordenados listos para lectura rápida...</div>
+        <div class="grid-2" style="margin-top:12px;">
+            <button class="btn-secundario" onclick="exportarTXT()">Exportar Informe (.TXT)</button>
+            <button class="btn-danger" onclick="clearInforme()">Limpiar Pantalla</button>
+        </div>
+        
+        <div class="cheat-sheet">
+            <strong>⚙️ Manual de Sintaxis Contextual:</strong> Los dados deben seguir el formato estricto <code>xdx</code> (Ej: <code>1d8</code>, <code>2d6</code>, <code>4d12</code>). Los impactos Críticos (20 natural) duplican automáticamente los dados de daño configurados antes de añadir los bonos.
+        </div>
+    </div>
+</div>
+
+    <script>
+        let templates = JSON.parse(localStorage.getItem('dm_templates_v2')) || {};
+        let mesaActiva = [];
+        let acumuladoInformes = "";
+
+        function saveTemplate() {
+            const name = document.getElementById('t_name').value.trim();
+            const atkBonus = parseInt(document.getElementById('t_atkBonus').value) || 0;
+            const atkExtras = parseInt(document.getElementById('t_atkExtras').value) || 0;
+            const dmgDados = document.getElementById('t_dmgDados').value.trim().toLowerCase();
+            const dmgBono = parseInt(document.getElementById('t_dmgBono').value) || 0;
+            const dmgExtras = parseInt(document.getElementById('t_dmgExtras').value) || 0;
+
+            if (!name || !dmgDados.includes('d')) {
+                alert("Error: Introduce un nombre y formato de dados válido (ej: 2d6).");
+                return;
+            }
+
+            templates[name] = { name, atkBonus, atkExtras, dmgDados, dmgBono, dmgExtras };
+            localStorage.setItem('dm_templates_v2', JSON.stringify(templates));
+            
+            document.getElementById('t_name').value = '';
+            document.getElementById('t_dmgDados').value = '';
+            renderTemplates();
+        }
+
+        function deleteTemplate(name) {
+            if(confirm(`¿Eliminar la plantilla de "${name}"?`)) {
+                delete templates[name];
+                localStorage.setItem('dm_templates_v2', JSON.stringify(templates));
+                renderTemplates();
+            }
+        }
+
+        function renderTemplates() {
+            const container = document.getElementById('templatesContainer');
+            container.innerHTML = Object.keys(templates).length === 0 ? '<span style="color:var(--text-muted)">No hay plantillas creadas. Configura una arriba.</span>' : '';
+            
+            for (let key in templates) {
+                const t = templates[key];
+                const div = document.createElement('div');
+                div.className = 'template-chip';
+                div.innerHTML = `
+                    <div>
+                        <strong style="color:var(--text-main);">${t.name}</strong> 
+                        <span style="color:var(--text-muted); font-size:12px;"><br>(Atk: +${t.atkBonus}+${t.atkExtras} | Daño: ${t.dmgDados}+${t.dmgBono}+${t.dmgExtras})</span>
+                    </div>
+                    <div style="display:flex; gap:6px;">
+                        <button class="btn-secundario" style="padding:6px 12px; width:auto; margin:0; font-size:12px;" onclick="cargarAMesa('${key}')">+ Mesa</button>
+                        <button class="btn-danger" style="padding:6px 10px; width:auto; margin:0; font-size:12px;" onclick="deleteTemplate('${key}')">✕</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            }
+        }
+
+        function cargarAMesa(key) {
+            const t = templates[key];
+            mesaActiva.push({
+                ...t,
+                idInstancia: Date.now() + Math.random().toString(36).substr(2, 5),
+                numAtaques: 1
+            });
+            renderMesaActiva();
+        }
+
+        function removerDeMesa(id) {
+            mesaActiva = mesaActiva.filter(item => item.idInstancia !== id);
+            renderMesaActiva();
+        }
+
+        function syncQty(id, value) {
+            const idx = mesaActiva.findIndex(item => item.idInstancia === id);
+            if(idx !== -1) mesaActiva[idx].numAtaques = parseInt(value) || 1;
+        }
+
+        function renderMesaActiva() {
+            const container = document.getElementById('mesaActivaContainer');
+            container.innerHTML = mesaActiva.length === 0 ? '<span style="color:var(--text-muted)">La mesa está vacía. Carga monstruos desde tus plantillas.</span>' : '';
+            
+            mesaActiva.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'subject-row';
+                div.innerHTML = `
+                    <div class="grid-3" style="align-items: center;">
+                        <div><strong style="color:var(--primary);">${item.name}</strong></div>
+                        <div>
+                            <label>Sujetos / Ataques</label>
+                            <input type="number" value="${item.numAtaques}" min="1" onchange="syncQty('${item.idInstancia}', this.value)" style="margin-bottom:0;">
+                        </div>
+                        <div style="display: flex; align-items: flex-end;">
+                            <button class="btn-danger" style="padding:10px; margin:0; font-size:12px;" onclick="removerDeMesa('${item.idInstancia}')">Retirar</button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function clearMesa() { mesaActiva = []; renderMesaActiva(); }
+        function clearInforme() { acumuladoInformes = ""; document.getElementById('output').innerHTML = "Historial limpio."; window.lastTxtLog = ""; }
+
+        function rollDice(formula) {
+            const parts = formula.toLowerCase().split('d');
+            const qty = parseInt(parts[0]) || 1;
+            const faces = parseInt(parts[1]) || 6;
+            let sum = 0;
+            for(let i=0; i<qty; i++) {
+                sum += Math.floor(Math.random() * faces) + 1;
+            }
+            return sum;
+        }
+
+        function ejecutarRondaMasiva() {
+            const ac = parseInt(document.getElementById('combat_ac').value);
+            if(!ac) return alert("Falta CA Objetivo.");
+            if(mesaActiva.length === 0) return alert("Mesa vacía.");
+
+            let tStamp = new Date().toLocaleTimeString();
+            let htmlLog = `<div class="log-header">=== INFORME DE COMBATE (${tStamp}) | CA OBJETIVO: ${ac} ===</div>\n`;
+            let txtLog = `=== INFORME DE COMBATE (${tStamp}) | CA OBJETIVO: ${ac} ===\n`;
+            
+            let granTotalGeneral = 0;
+
+            const mesaConsolidada = {};
+            mesaActiva.forEach(item => {
+                if (!mesaConsolidada[item.name]) {
+                    mesaConsolidada[item.name] = { ...item, instancias: [] };
+                }
+                mesaConsolidada[item.name].instancias.push(item.numAtaques);
+            });
+
+            Object.values(mesaConsolidada).forEach(s => {
+                let dmgSujeto = 0;
+                let totalHits = 0;
+                let totalCrits = 0;
+                
+                let lineasImpactosHTML = [];
+                let lineasImpactosTXT = [];
+                
+                let sujetosQueFallaronTodo = [];
+                let detallesFallos = [];
+
+                let numeroSujetoGlobal = 1;
+                const bonoAtkTotal = s.atkBonus + s.atkExtras;
+
+                s.instancias.forEach(numAtaquesDelSujeto => {
+                    for (let sInstancia = 0; sInstancia < numAtaquesDelSujeto; sInstancia++) {
+                        let hitsDelSujeto = 0;
+                        let idFormateado = String(numeroSujetoGlobal).padStart(2, '0');
+
+                        const d20 = Math.floor(Math.random() * 20) + 1;
+                        const totalAtk = d20 + bonoAtkTotal;
+                        const esCrit = (d20 === 20);
+                        const impacta = (totalAtk >= ac || esCrit);
+
+                        let coreText = `[Sujeto #${idFormateado}] d20(${String(d20).padStart(2, ' ')}) +${bonoAtkTotal} = Total: ${String(totalAtk).padStart(2, ' ')}`;
+
+                        if(impacta) {
+                            hitsDelSujeto++;
+                            totalHits++;
+                            let baseDmg = rollDice(s.dmgDados);
+                            let critLabelHTML = "";
+                            let critLabelTXT = "";
+
+                            if(esCrit) {
+                                totalCrits++;
+                                baseDmg += rollDice(s.dmgDados); 
+                                critLabelHTML = ` <span class="log-crit">¡CRÍTICO NAT 20!</span>`;
+                                critLabelTXT = ` ¡CRÍTICO NAT 20!`;
+                            }
+
+                            let finalDmg = Math.max(0, baseDmg + s.dmgBono + s.dmgExtras);
+                            dmgSujeto += finalDmg;
+
+                            lineasImpactosHTML.push(`  <span class="log-hit">🎯 ${coreText}</span> -> <strong>IMPACTA</strong> (${finalDmg} dmg)${critLabelHTML}`);
+                            lineasImpactosTXT.push(`  🎯 ${coreText} -> IMPACTA (${finalDmg} dmg)${critLabelTXT}`);
+                        } else {
+                            detallesFallos.push(`Sujeto #${idFormateado} (d20:${d20}/Tot:${totalAtk})`);
+                        }
+
+                        if (hitsDelSujeto === 0) {
+                            sujetosQueFallaronTodo.push(`#${idFormateado}`);
+                        }
+
+                        numeroSujetoGlobal++;
+                    }
+                });
+
+                const totalSujetosDeEsteTipo = numeroSujetoGlobal - 1;
+
+                htmlLog += `\n<strong>• ${s.name.toUpperCase()} (${totalSujetosDeEsteTipo} Sujetos Totales):</strong>\n`;
+                txtLog += `\n• ${s.name.toUpperCase()} (${totalSujetosDeEsteTipo} Sujetos Totales):\n`;
+                
+                if (totalHits === 0) {
+                    let stringFallos = `  <span class="log-miss">❌ Todos los sujetos fallaron sus ataques.\n     [Detalle: ${detallesFallos.join(', ')}]</span>\n`;
+                    htmlLog += stringFallos;
+                    txtLog += `  ❌ Todos los sujetos fallaron sus ataques.\n     [Detalle: ${detallesFallos.join(', ')}]\n`;
+                } else {
+                    htmlLog += lineasImpactosHTML.join('\n') + '\n';
+                    txtLog += lineasImpactosTXT.join('\n') + '\n';
+                    
+                    if (sujetosQueFallaronTodo.length > 0) {
+                        htmlLog += `  <span class="log-miss">  [❌ Los sujetos ${sujetosQueFallaronTodo.join(', ')} fallaron por completo]</span>\n`;
+                        txtLog += `  [❌ Los sujetos ${sujetosQueFallaronTodo.join(', ')} fallaron por completo]\n`;
+                    }
+                }
+
+                let summary = `  >> RESULTADO: ${totalHits}/${totalSujetosDeEsteTipo} Impactos [${totalCrits} Críticos] | Daño Grupo: ${dmgSujeto}\n`;
+                htmlLog += `<strong>${summary}</strong>`;
+                txtLog += summary;
+                granTotalGeneral += dmgSujeto;
+            });
+
+            const footerHTML = `\n<div class="log-total">💥 DAÑO TOTAL COMBINADO A LA PARTY: ${granTotalGeneral} PUNTOS.</div>\n`;
+            const footerTXT = `\n================================================\n💥 DAÑO TOTAL COMBINADO A LA PARTY: ${granTotalGeneral} PUNTOS.\n\n`;
+
+            acumuladoInformes = htmlLog + footerHTML + "<hr style='border:1px solid var(--border-color); margin: 10px 0;'>\n" + acumuladoInformes;
+            document.getElementById('output').innerHTML = acumuladoInformes;
+
+            window.lastTxtLog = txtLog + footerTXT + (window.lastTxtLog || "");
+        }
+
+        function exportarTXT() {
+            if(!window.lastTxtLog) return alert("No hay datos en el historial para exportar.");
+            const blob = new Blob([window.lastTxtLog], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `bitacora_combate_dnd_${new Date().toISOString().slice(0, 10)}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        renderTemplates();
+    </script>
+</body>
+</html>
