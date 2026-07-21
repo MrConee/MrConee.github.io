@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D&D Combo Master Pro</title>
+    <style>
+        :root {
+            --bg-main: #0f0f12;
+            --bg-box: #1a1a21;
+            --bg-card: #111116;
+            --border-color: #2d2d39;
+            --border-focus: #4b4b63;
+            --accent-red: #f43f5e;
+            --accent-red-hover: #e11d48;
+            --accent-yellow: #fbbf24;
+            --accent-green: #10b981;
+            --accent-green-hover: #059669;
+            --accent-blue: #38bdf8;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --text-dark: #64748b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            line-height: 1.5;
+        }
+
+        .container { max-width: 1100px; width: 100%; position: relative; }
+        
+        .app-header {
+            display: flex; flex-direction: column; gap: 8px; margin-bottom: 25px;
+            border-bottom: 2px solid var(--border-color); padding-bottom: 15px;
+        }
+
+        @media(min-width: 600px) {
+            .app-header { flex-direction: row; justify-content: space-between; align-items: flex-end; }
+            body { padding: 30px; }
+        }
+
+        h2 { color: var(--accent-red); text-transform: uppercase; letter-spacing: 2px; font-size: 22px; font-weight: 800; }
+        @media(min-width: 600px) { h2 { font-size: 26px; } }
+        
+        .grid-layout { display: grid; grid-template-columns: 1fr; gap: 20px; align-items: start; }
+        @media(min-width: 850px) { .grid-layout { grid-template-columns: 350px 1fr; } }
+        
+        .box {
+            background-color: var(--bg-box); padding: 20px; border-radius: 12px;
+            border: 1px solid var(--border-color); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .box-title {
+            font-size: 13px; font-weight: 800; color: var(--accent-yellow); margin-bottom: 15px;
+            border-bottom: 1px solid var(--border-color); padding-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;
+        }
+
+        /* Formulario */
+        .form-group { margin-bottom: 12px; display: flex; flex-direction: column; }
+        .form-row { display: flex; flex-direction: row; gap: 10px; }
+        .form-row .form-group { flex: 1; }
+
+        label { font-size: 11px; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
+        input, select, textarea {
+            padding: 10px 12px; background-color: var(--bg-card); border: 1px solid var(--border-color); 
+            border-radius: 8px; color: #fff; font-size: 14px; width: 100%; transition: border 0.2s, box-shadow 0.2s;
+            font-family: inherit;
+        }
+        input:focus, select:focus, textarea:focus { 
+            border-color: var(--accent-red); outline: none; box-shadow: 0 0 0 2px rgba(244, 63, 94, 0.2); 
+        }
+        input::placeholder, textarea::placeholder { color: #52525b; font-style: italic; }
+        
+        /* Botones */
+        .btn { 
+            padding: 10px 16px; font-weight: 700; border: none; border-radius: 8px; 
+            cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn-save { background-color: var(--accent-green); color: white; width: 100%; margin-top: 5px; font-size: 14px; padding: 12px; }
+        .btn-save:hover { background-color: var(--accent-green-hover); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
+        
+        .btn-roll { background-color: var(--accent-red); color: white; padding: 8px 18px; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
+        .btn-roll:hover { background-color: var(--accent-red-hover); box-shadow: 0 4px 12px rgba(244, 63, 94, 0.4); }
+        
+        .btn-icon { background-color: transparent; color: var(--text-dark); padding: 8px; font-size: 16px; border-radius: 6px; }
+        .btn-icon:hover { background-color: var(--border-color); color: white; }
+        .btn-icon.delete:hover { color: var(--accent-red); background-color: rgba(244, 63, 94, 0.1); }
+        .btn-icon.edit:hover { color: var(--accent-blue); background-color: rgba(56, 189, 248, 0.1); }
+        
+        .btn-clear { background-color: transparent; border: 1px solid var(--text-dark); color: var(--text-muted); padding: 6px 12px; font-size: 12px; }
+        .btn-clear:hover { background-color: var(--border-color); color: white; }
+
+        /* Lista de Combos */
+        .combo-list { display: flex; flex-direction: column; gap: 12px; margin-top: 15px; }
+        .combo-card {
+            background-color: var(--bg-card); border-left: 4px solid var(--border-focus); padding: 14px; 
+            border-radius: 8px; display: flex; flex-direction: column; gap: 15px; border: 1px solid var(--border-color); 
+            border-left-width: 4px; transition: transform 0.2s, border-color 0.2s;
+        }
+        .combo-card:hover { border-left-color: var(--accent-red); transform: translateX(2px); }
+        
+        @media(min-width: 540px) {
+            .combo-card { flex-direction: row; justify-content: space-between; align-items: center; }
+        }
+
+        .combo-meta { flex: 1; word-break: break-word; }
+        .combo-meta .header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+        .combo-meta .clave { font-size: 10px; background-color: #27272a; color: var(--accent-yellow); padding: 3px 6px; border-radius: 4px; font-family: monospace; font-weight: bold; }
+        .combo-meta .nombre { font-size: 16px; font-weight: 800; color: #fff; }
+        .combo-meta .dc-badge { font-size: 11px; background-color: rgba(56, 189, 248, 0.15); color: var(--accent-blue); padding: 2px 6px; border-radius: 4px; font-weight: bold; border: 1px solid rgba(56, 189, 248, 0.3); }
+        .combo-meta .desc { font-size: 12px; color: var(--text-muted); line-height: 1.4; margin-bottom: 8px; }
+        .combo-meta .formulas { font-size: 11px; color: var(--accent-blue); font-family: monospace; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; display: inline-block; }
+        
+        .combo-actions { display: flex; flex-direction: row; justify-content: space-between; align-items: center; gap: 10px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; }
+        @media(min-width: 540px) { .combo-actions { flex-direction: column; align-items: flex-end; background: transparent; padding: 0; } }
+        .select-d20-live { padding: 6px 10px; font-size: 12px; background-color: var(--bg-box); color: var(--text-main); font-weight: bold; border-radius: 6px; }
+
+        /* Reporte y Tarjetas de Impacto */
+        .report-box { display: none; }
+        .report-header-interactive {
+            display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;
+            background: rgba(0,0,0,0.2); padding: 15px 20px; border-radius: 10px; margin-bottom: 20px; gap: 15px; border: 1px solid var(--border-color);
+        }
+
+        .report-summary-cards { display: flex; flex-direction: row; gap: 12px; width: 100%; margin-bottom: 25px; flex-wrap: wrap; }
+        .score-card {
+            background: var(--bg-card); padding: 15px; border-radius: 10px; text-align: center; flex: 1 1 140px;
+            border: 1px solid var(--border-color); box-shadow: inset 0 2px 8px rgba(0,0,0,0.2); position: relative; overflow: hidden;
+        }
+        .score-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: var(--accent-green); }
+        .score-card#cardContenedorDC::before { background: var(--accent-blue); }
+        
+        .score-card .val { font-size: 36px; font-weight: 800; color: var(--accent-green); font-family: monospace; line-height: 1; margin-bottom: 5px; }
+        .score-card .val.dc-color { color: var(--accent-blue); }
+        .score-card .lbl { font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
+
+        .burst-grid { display: flex; flex-direction: column; gap: 12px; }
+        
+        .hit-card {
+            background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px;
+            padding: 15px; display: flex; flex-direction: column; gap: 12px; position: relative; 
+            border-left: 5px solid var(--text-dark); transition: transform 0.2s;
+        }
+        .hit-card:hover { transform: scale(1.01); background: #15151a; }
+        
+        @media(min-width: 600px) {
+            .hit-card { display: grid; grid-template-columns: 120px 1fr 130px; align-items: center; gap: 20px; padding: 15px 20px; }
+        }
+        
+        .hit-card.is-critico { border-left-color: var(--accent-yellow); background: linear-gradient(90deg, rgba(251,191,36,0.1) 0%, rgba(17,17,22,1) 30%); }
+        .hit-card.is-pifia { border-left-color: var(--accent-red); background: linear-gradient(90deg, rgba(244,63,94,0.1) 0%, rgba(17,17,22,1) 30%); }
+
+        .attack-result-badge, .damage-result-badge { display: flex; flex-direction: column; }
+        .damage-result-badge { text-align: right; }
+        
+        .attack-label, .damage-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px; margin-bottom: 2px; }
+        .attack-number { font-size: 32px; font-weight: 800; color: #fff; line-height: 1; font-family: monospace; }
+        .damage-number { font-size: 32px; font-weight: 800; color: var(--accent-green); line-height: 1; font-family: monospace; }
+        
+        .hit-card.is-critico .attack-number { color: var(--accent-yellow); text-shadow: 0 0 10px rgba(251, 191, 36, 0.4); }
+        .hit-card.is-pifia .attack-number { color: var(--accent-red); }
+
+        .attack-details { display: flex; flex-direction: column; gap: 4px; justify-content: center; width: 100%; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 6px; }
+        @media(min-width: 600px) { .attack-details { background: transparent; padding: 0; } }
+        
+        .math-line { font-size: 12px; color: var(--text-muted); font-family: monospace; }
+        .math-line strong { color: #fff; }
+        .damage-line { font-size: 12px; color: #cbd5e1; font-family: monospace; }
+        .hit-card.is-critico .damage-line { color: #fef08a; }
+
+        .audit-id-tag { font-size: 9px; color: var(--border-focus); font-family: monospace; text-align: right; margin-top: -5px; }
+        @media(min-width: 600px) { .audit-id-tag { position: absolute; bottom: 6px; right: 10px; margin-top: 0; } }
+
+        /* Toast Notifications */
+        #toast-container { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 1000; pointer-events: none; }
+        .toast {
+            background: var(--bg-box); border-left: 4px solid var(--accent-green); color: white;
+            padding: 12px 20px; border-radius: 6px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            font-size: 13px; font-weight: bold; display: flex; align-items: center; gap: 10px;
+            animation: slideIn 0.3s ease-out, fadeOut 0.3s ease-in 2.7s forwards; pointer-events: auto;
+        }
+        .toast.error { border-left-color: var(--accent-red); }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes fadeOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="app-header">
+        <div>
+            <h2>D&D Combo Master Pro</h2>
+            <div style="font-size: 12px; color: var(--text-dark); font-weight: bold; text-transform: uppercase; margin-top: 4px;">Tactical Build v8.1 - Fix</div>
+        </div>
+    </div>
+
+    <div class="grid-layout">
+        <!-- CONFIGURACIÓN (COLUMNA IZQUIERDA EN DESKTOP) -->
+        <div class="box">
+            <div class="box-title" id="formTitle">Crear Nuevo Combo</div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Clave Única (Automática)</label>
+                    <input type="text" id="cfgClave" placeholder="Generando...">
+                </div>
+                <div class="form-group">
+                    <label>Nombre del Ataque *</label>
+                    <input type="text" id="cfgNombre" placeholder="Ej: Castigo Divino">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Descripción / Reglas</label>
+                <textarea id="cfgDesc" rows="2" placeholder="Ej: Si es no-muerto agrega 1d8 extra..."></textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Bono Prof.</label><input type="number" id="cfgProf" value="3"></div>
+                <div class="form-group"><label>Modificador</label><input type="number" id="cfgStatAtk" value="4"></div>
+                <div class="form-group"><label>Dificultad (DC)</label><input type="number" id="cfgDC" value="0" placeholder="0 = No aplica"></div>
+            </div>
+            <div class="form-group">
+                <label>Fórmula Daño Base</label>
+                <input type="text" id="cfgDanoBase" placeholder="Ej: 1d8 + 4 + 2d6">
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Bono Extra Atk.</label><input type="text" id="cfgBuffAtk" placeholder="Ej: 1d4 (Bless) o 0"></div>
+                <div class="form-group"><label>Daño Extra</label><input type="text" id="cfgBuffDano" placeholder="Ej: 1d6 (Hex) o 0"></div>
+            </div>
+            <button class="btn btn-save" onclick="guardarCombo()">💾 Guardar en Grimorio</button>
+        </div>
+
+        <!-- REPOSITORIO Y RESULTADOS (COLUMNA DERECHA) -->
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+            
+            <!-- INFORME DE RESULTADOS -->
+            <div id="boxInforme" class="box report-box">
+                <div class="report-header-interactive">
+                    <div>
+                        <div id="reporteComboTitulo" style="font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 4px;">Última Acción</div>
+                        <div id="reporteComboDesc" style="font-size: 12px; color: var(--text-muted);">Lectura directa para mesa</div>
+                    </div>
+                    <button class="btn btn-clear" onclick="limpiarRegistro()">🧹 Limpiar Mesa</button>
+                </div>
+                
+                <div class="report-summary-cards">
+                    <div class="score-card">
+                        <div class="lbl">Suma Total Daño</div>
+                        <div id="infTotalDanoAcumulado" class="val">0</div>
+                    </div>
+                    <div class="score-card" id="cardContenedorDC">
+                        <div class="lbl">Tirada de Salvación</div>
+                        <div id="infValDC" class="val dc-color">DC 0</div>
+                    </div>
+                </div>
+
+                <div id="burstGridResultados" class="burst-grid"></div>
+            </div>
+
+            <!-- LISTA DE COMBOS -->
+            <div class="box">
+                <div class="box-title" style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>Grimorio Táctico</span>
+                    <div style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-main);">
+                        <label style="margin:0;">Objetivos/Atk:</label>
+                        <input type="number" id="numAtaquesGlobal" value="1" min="1" max="20" style="width: 50px; padding: 4px 8px; text-align: center; border-color: var(--accent-yellow);">
+                    </div>
+                </div>
+                <div id="listaCombos" class="combo-list">
+                    <div style="text-align: center; padding: 20px; color: var(--text-dark); font-size: 13px;">Cargando Grimorio...</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+    const STORAGE_KEY = 'dd_combos_pro_v8';
+
+    document.addEventListener("DOMContentLoaded", () => {
+        cargarCombos();
+        generarClaveAleatoria();
+    });
+
+    function d(caras) { return Math.floor(Math.random() * caras) + 1; }
+
+    function generarClaveAleatoria() {
+        // Genera una clave estilo ATK_3F9B
+        const randomString = Math.random().toString(36).substring(2, 6).toUpperCase();
+        document.getElementById('cfgClave').value = 'ATK_' + randomString;
+    }
+
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.innerHTML = type === 'success' ? `✅ ${message}` : `⚠️ ${message}`;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+
+    function resolverDadosTexto(cadena) {
+        let textoLimpio = cadena.toLowerCase().replace(/\s+/g, '').replace(/-/g, '+-');
+        if (!textoLimpio || textoLimpio === '0') return { total: 0, desglose: "0" };
+        
+        let terminos = textoLimpio.split('+');
+        let totalAcumulado = 0; let desgloses = [];
+
+        terminos.forEach(termino => {
+            if (!termino) return;
+            let multiplicador = 1;
+            if (termino.startsWith('-')) { multiplicador = -1; termino = termino.substring(1); }
+            
+            if (termino.includes('d')) {
+                let partes = termino.split('d');
+                let cantidad = parseInt(partes[0]) || 1;
+                let caras = parseInt(partes[1]) || 6;
+                let subtotal = 0; let subDados = [];
+                for (let i = 0; i < cantidad; i++) {
+                    let r = d(caras); subtotal += (r * multiplicador); subDados.push(r * multiplicador);
+                }
+                totalAcumulado += subtotal; desgloses.push(`[${subDados.join(',')}]`);
+            } else {
+                let valorFijo = parseInt(termino) || 0;
+                totalAcumulado += (valorFijo * multiplicador);
+                if(valorFijo !== 0) desgloses.push(valorFijo * multiplicador);
+            }
+        });
+        let desgloseFinal = desgloses.join(' + ').replace(/\+ -/g, '- ');
+        return { total: totalAcumulado, desglose: desgloseFinal };
+    }
+
+    function guardarCombo() {
+        const inputClave = document.getElementById('cfgClave');
+        const inputNombre = document.getElementById('cfgNombre');
+        
+        let clave = inputClave.value.trim().toUpperCase().replace(/\s+/g, '_');
+        const nombre = inputNombre.value.trim();
+        
+        // Resetear estilos de validación
+        inputNombre.style.borderColor = 'var(--border-color)';
+        
+        // Si borró la clave automática, generamos una de respaldo
+        if (!clave) {
+            clave = 'ATK_' + Math.random().toString(36).substring(2, 6).toUpperCase();
+        }
+
+        // Validación estricta del nombre (Campo obligatorio)
+        if (!nombre) {
+            inputNombre.style.borderColor = 'var(--accent-red)';
+            inputNombre.focus();
+            showToast("Debes asignar un Nombre del Ataque.", "error");
+            return;
+        }
+        
+        const combo = {
+            clave, nombre, desc: document.getElementById('cfgDesc').value,
+            prof: parseInt(document.getElementById('cfgProf').value) || 0,
+            statAtk: parseInt(document.getElementById('cfgStatAtk').value) || 0,
+            dc: parseInt(document.getElementById('cfgDC').value) || 0,
+            danoBase: document.getElementById('cfgDanoBase').value || "0",
+            buffAtk: document.getElementById('cfgBuffAtk').value || "0",
+            buffDano: document.getElementById('cfgBuffDano').value || "0"
+        };
+        
+        try {
+            let combos = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+            combos[clave] = combo; 
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(combos));
+            
+            cargarCombos();
+            showToast(`Combo '${nombre}' guardado.`);
+            
+            // Limpiar formulario y regenerar clave para el siguiente combo
+            inputNombre.value = '';
+            document.getElementById('cfgDesc').value = '';
+            document.getElementById('cfgDC').value = '0';
+            document.getElementById('formTitle').innerText = "Crear Nuevo Combo";
+            generarClaveAleatoria();
+
+        } catch (error) {
+            console.error("Error guardando en localStorage:", error);
+            showToast("Error de guardado. Revisa si tu navegador bloquea datos locales.", "error");
+        }
+    }
+
+    function cargarCombos() {
+        const contenedor = document.getElementById('listaCombos'); 
+        let combos = {};
+        
+        try {
+            combos = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+        } catch (error) {
+            contenedor.innerHTML = `<div style="text-align: center; padding: 20px; color: var(--accent-red); font-size: 13px;">El almacenamiento local está bloqueado en tu navegador.</div>`;
+            return;
+        }
+        
+        if (Object.keys(combos).length === 0) {
+            contenedor.innerHTML = `<div style="text-align: center; padding: 20px; color: var(--text-dark); font-size: 13px;">No hay combos guardados en tu Grimorio.</div>`;
+            return;
+        }
+        
+        contenedor.innerHTML = "";
+        for (const clave in combos) {
+            const c = combos[clave];
+            const card = document.createElement('div'); card.className = 'combo-card';
+            
+            let indicadorDC = c.dc > 0 ? `<span class="dc-badge">DC ${c.dc}</span>` : '';
+            let bAtkTotal = c.prof + c.statAtk;
+            let sig = bAtkTotal >= 0 ? '+' : '';
+            
+            card.innerHTML = `
+                <div class="combo-meta">
+                    <div class="header">
+                        <span class="clave">${c.clave}</span>
+                        <span class="nombre">${c.nombre}</span>
+                        ${indicadorDC}
+                    </div>
+                    <div class="desc">${c.desc || 'Sin reglas especiales.'}</div>
+                    <div class="formulas">ATK: ${sig}${bAtkTotal} | DMG: ${c.danoBase} <span style="color:var(--text-dark)">+(${c.buffDano})</span></div>
+                </div>
+                <div class="combo-actions">
+                    <select id="modLive-${clave}" class="select-d20-live">
+                        <option value="normal">🎲 Normal</option>
+                        <option value="ventaja">🟢 Ventaja</option>
+                        <option value="desventaja">🔴 Desventaja</option>
+                    </select>
+                    <button class="btn btn-roll" onclick="ejecutarCombo('${clave}')">Lanzar</button>
+                    <div style="display:flex;">
+                        <button class="btn-icon edit" onclick="editarCombo('${clave}')" title="Editar">✏️</button>
+                        <button class="btn-icon delete" onclick="eliminarCombo('${clave}')" title="Eliminar">🗑️</button>
+                    </div>
+                </div>`;
+            contenedor.appendChild(card);
+        }
+    }
+
+    function editarCombo(clave) {
+        const combos = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+        const c = combos[clave]; if (!c) return;
+        
+        document.getElementById('cfgClave').value = c.clave;
+        document.getElementById('cfgNombre').value = c.nombre;
+        document.getElementById('cfgDesc').value = c.desc;
+        document.getElementById('cfgProf').value = c.prof;
+        document.getElementById('cfgStatAtk').value = c.statAtk;
+        document.getElementById('cfgDC').value = c.dc;
+        document.getElementById('cfgDanoBase').value = c.danoBase;
+        document.getElementById('cfgBuffAtk').value = c.buffAtk;
+        document.getElementById('cfgBuffDano').value = c.buffDano;
+        
+        document.getElementById('formTitle').innerText = "Editando: " + c.nombre;
+        document.getElementById('cfgNombre').style.borderColor = 'var(--border-color)';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function eliminarCombo(clave) {
+        if(!confirm("¿Borrar este combo definitivamente?")) return;
+        let combos = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+        delete combos[clave]; 
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(combos));
+        cargarCombos();
+        showToast("Combo eliminado.");
+        // Si estaba editando el que borró, limpiamos y creamos clave nueva
+        if(document.getElementById('cfgClave').value === clave) {
+            document.getElementById('cfgNombre').value = '';
+            document.getElementById('formTitle').innerText = "Crear Nuevo Combo";
+            generarClaveAleatoria();
+        }
+    }
+
+    function limpiarRegistro() {
+        document.getElementById('boxInforme').style.display = 'none';
+        document.getElementById('burstGridResultados').innerHTML = '';
+        showToast("Mesa limpiada.");
+    }
+
+    function ejecutarCombo(clave) {
+        const combos = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+        const combo = combos[clave]; if (!combo) return;
+
+        const numAtaques = parseInt(document.getElementById('numAtaquesGlobal').value) || 1;
+        const modD20Live = document.getElementById(`modLive-${clave}`).value;
+        const hashSesion = Math.random().toString(36).substr(2, 4).toUpperCase();
+
+        document.getElementById('reporteComboTitulo').innerText = `${combo.nombre}`;
+        document.getElementById('reporteComboDesc').innerText = combo.desc || 'Desglose táctico de tiradas.';
+
+        const contenedorDC = document.getElementById('cardContenedorDC');
+        if (combo.dc && combo.dc > 0) {
+            contenedorDC.style.display = 'block';
+            document.getElementById('infValDC').innerText = `DC ${combo.dc}`;
+        } else {
+            contenedorDC.style.display = 'none';
+        }
+
+        let totalDanoAcumuladoRafaga = 0;
+        const grid = document.getElementById('burstGridResultados'); grid.innerHTML = "";
+
+        for (let i = 1; i <= numAtaques; i++) {
+            let r1 = d(20); let r2 = d(20);
+            let d20Final = r1;
+            let anotacionDados = `[${r1}]`;
+            
+            if (modD20Live === 'ventaja') {
+                d20Final = Math.max(r1, r2); anotacionDados = `[${r1}, ${r2}] (V)`;
+            } else if (modD20Live === 'desventaja') {
+                d20Final = Math.min(r1, r2); anotacionDados = `[${r1}, ${r2}] (D)`;
+            }
+
+            let esCritico = (d20Final === 20); let esPifia = (d20Final === 1);
+            let resBuffAtk = resolverDadosTexto(combo.buffAtk);
+            let bonoFijoAtk = combo.prof + combo.statAtk;
+            let totalToHit = d20Final + bonoFijoAtk + resBuffAtk.total;
+
+            let fBase = combo.danoBase; let fBuff = combo.buffDano;
+            if (esCritico) {
+                fBase = fBase.replace(/[0-9]+(?=d)/g, m => m * 2);
+                fBuff = fBuff.replace(/[0-9]+(?=d)/g, m => m * 2);
+            }
+            
+            let rBase = resolverDadosTexto(fBase); let rBuff = resolverDadosTexto(fBuff);
+            let totalDano = rBase.total + rBuff.total;
+            let desgloseTexto = `Base: ${rBase.total} <span style="color:var(--text-dark)">(${rBase.desglose})</span>`;
+            if(rBuff.total !== 0) desgloseTexto += `<br>Extra: ${rBuff.total} <span style="color:var(--text-dark)">(${rBuff.desglose})</span>`;
+
+            totalDanoAcumuladoRafaga += totalDano;
+
+            let modificadorClase = esCritico ? "is-critico" : (esPifia ? "is-pifia" : "");
+            let textoResultadoAtaque = esCritico ? "CRIT" : (esPifia ? "PIFIA" : totalToHit);
+            let desgloseHit = `d20: <strong>${anotacionDados}</strong> + Fijo: ${bonoFijoAtk} ${resBuffAtk.total ? '+ Buff: '+resBuffAtk.total : ''}`;
+
+            const card = document.createElement('div');
+            card.className = `hit-card ${modificadorClase}`;
+            
+            card.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
+                    <div class="attack-result-badge">
+                        <div class="attack-label">${esCritico || esPifia ? 'D20 Natural' : 'Total Ataque'}</div>
+                        <div class="attack-number">${textoResultadoAtaque}</div>
+                    </div>
+                    <div class="damage-result-badge">
+                        <div class="damage-label">Daño Generado</div>
+                        <div class="damage-number">${totalDano}</div>
+                    </div>
+                </div>
+                <div class="attack-details">
+                    <div class="math-line">${desgloseHit}</div>
+                    <div class="damage-line">${desgloseTexto}</div>
+                </div>
+                <div class="audit-id-tag">#ATK-${hashSesion}-${i}</div>
+            `;
+            grid.appendChild(card);
+        }
+
+        document.getElementById('boxInforme').style.display = 'block';
+        document.getElementById('infTotalDanoAcumulado').innerText = totalDanoAcumuladoRafaga;
+        
+        document.getElementById('infTotalDanoAcumulado').style.transform = "scale(1.2)";
+        setTimeout(() => document.getElementById('infTotalDanoAcumulado').style.transform = "scale(1)", 200);
+
+        document.getElementById('boxInforme').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+</script>
+</body>
+</html>
