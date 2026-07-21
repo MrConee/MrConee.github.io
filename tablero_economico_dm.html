@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#070a11">
     <title>Tablero Económico DM - Casa de Naipes</title>
     <!-- Incluimos html2pdf desde CDN para la exportación a PDF directa -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -65,7 +66,8 @@
 
         @media (max-width: 1100px) {
             .app-container { grid-template-columns: 1fr; }
-            .sticky-col { position: static; }
+            .sticky-col { position: static; order: 2; }
+            #pdfContent { order: 1; }
         }
 
         /* Paneles de Control y Tarjetas */
@@ -307,6 +309,14 @@
             width: 100% !important;
             font-size: 0.85rem !important;
         }
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 30px 20px;
+            font-style: italic;
+            border: 1px dashed var(--border);
+            border-radius: 10px;
+        }
         .empty-row td {
             text-align: center;
             color: var(--text-muted);
@@ -426,6 +436,103 @@
         /* Ocultar elementos de UI interactivos al exportar PDF si es necesario */
         @media print {
             .no-print { display: none !important; }
+        }
+
+        /* ===== Matriz de Precios como secciones/tarjetas (reemplaza la tabla ancha) ===== */
+        .pricing-toolbar {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .pricing-toolbar .btn {
+            width: auto;
+            padding: 8px 14px;
+        }
+        .pricing-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .settlement-section {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+            background: #0b1120;
+        }
+        .settlement-summary {
+            list-style: none;
+            cursor: pointer;
+            padding: 12px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            background: #0e1626;
+            user-select: none;
+        }
+        .settlement-summary::-webkit-details-marker { display: none; }
+        .settlement-summary:hover { background: var(--surface-hover); }
+        .settlement-heading { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; min-width: 0; }
+        .settlement-heading .name { font-weight: 700; color: var(--text-main); font-size: 0.98rem; }
+        .settlement-heading .desc { font-size: 0.78rem; color: var(--text-muted); }
+        .settlement-heading .mod { font-family: monospace; font-size: 0.75rem; color: var(--gold); background: var(--gold-glow); padding: 2px 7px; border-radius: 20px; white-space: nowrap; }
+        .settlement-count { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; flex: none; }
+        .settlement-chevron { flex: none; width: 16px; height: 16px; color: var(--text-muted); transition: var(--transition); }
+        details[open] > .settlement-summary .settlement-chevron { transform: rotate(180deg); }
+
+        .price-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 10px;
+            padding: 12px;
+        }
+        .price-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+        }
+        .price-card-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 3px;
+            line-height: 1.3;
+        }
+        .price-card-note {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            font-style: italic;
+        }
+        .price-card-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+        }
+        .price-stat {
+            background: #070a11;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 6px 4px;
+            text-align: center;
+        }
+        .price-stat span { display: block; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); margin-bottom: 2px; }
+        .price-stat strong { font-size: 0.82rem; color: var(--gold); font-variant-numeric: tabular-nums; }
+        .price-stat.prom strong { color: var(--text-main); }
+
+        /* ===== Ajustes finos para móviles pequeños ===== */
+        @media (max-width: 480px) {
+            body { padding: 14px 10px 32px; }
+            .app-container { gap: 14px; }
+            .panel { padding: 14px; margin-bottom: 14px; }
+            h1 { font-size: 1.15rem; }
+            .row-2, .btn-row { grid-template-columns: 1fr; }
+            .converter-grid { grid-template-columns: 1fr; }
+            .converter-swap { justify-self: center; transform: rotate(90deg); }
+            .two-col-grid { grid-template-columns: 1fr !important; }
+            .price-grid { grid-template-columns: 1fr; padding: 10px; }
+            .toast { left: 12px; right: 12px; bottom: 12px; text-align: center; }
         }
     </style>
 </head>
@@ -595,7 +702,7 @@
         </div>
 
         <!-- Tarjetas de Datos Brutos Estilizadas -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+        <div class="two-col-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
             <div class="panel" style="margin-bottom:0;">
                 <h2>Estándar de Vida</h2>
                 <ul class="metric-sublist">
@@ -635,25 +742,16 @@
                     <select id="selectCategoria" onchange="renderizarMatrizPrecios()" aria-label="Filtrar por categoría">
                         <option value="todas">-- Todas las Categorías --</option>
                     </select>
-                    <button class="btn btn-outline" style="width: auto; padding: 8px 14px;" onclick="copiarMatrizCSV()">📋 Copiar CSV</button>
                 </div>
             </div>
 
-            <div class="table-responsive">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Asentamiento</th>
-                            <th>Categoría / Servicio</th>
-                            <th>Mín</th>
-                            <th>Prom</th>
-                            <th>Máx</th>
-                            <th>Nota</th>
-                        </tr>
-                    </thead>
-                    <tbody id="pricingTableBody"></tbody>
-                </table>
+            <div class="pricing-toolbar no-print" style="margin-bottom: 14px;">
+                <button class="btn btn-outline" onclick="toggleExpandirSecciones()" id="btnExpandirSecciones">⇕ Expandir todo</button>
+                <button class="btn btn-outline" onclick="descargarMatrizCSV()">⬇ Descargar CSV</button>
+                <button class="btn btn-outline" onclick="copiarMatrizCSV()">📋 Copiar CSV</button>
             </div>
+
+            <div class="pricing-container" id="pricingContainer"></div>
         </div>
     </div>
 
@@ -880,19 +978,23 @@ function poblarFiltroCategorias() {
     });
 }
 
-function renderizarMatrizPrecios() {
-    let tbody = document.getElementById('pricingTableBody');
-    tbody.innerHTML = '';
+function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, s => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[s]));
+}
 
+/* Construye el modelo de datos de la matriz (independiente de cómo se pinte o se exporte) */
+function construirMatrizDatos() {
     let filtroAsentamiento = document.getElementById('selectAsentamiento').value;
     let filtroCategoria = document.getElementById('selectCategoria').value;
     let canasta = parseFloat(document.getElementById('canastaBase').value) || 10;
     let primarySym = getPrimarySymbol();
-    let filasRenderizadas = 0;
+
+    let secciones = [];
 
     Object.keys(asentamientosConfig).forEach(asentamiento => {
         if (filtroAsentamiento !== "todos" && filtroAsentamiento !== asentamiento) return;
         let conf = asentamientosConfig[asentamiento];
+        let items = [];
 
         categoriasBase.forEach(cat => {
             if (filtroCategoria !== "todas" && filtroCategoria !== cat.nombre) return;
@@ -902,37 +1004,99 @@ function renderizarMatrizPrecios() {
             let promVal = Math.round(cat.baseProm * conf.modBase * infladorMundano);
             let maxVal = Math.round(cat.baseMax * conf.modBase * infladorMundano);
 
-            let tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td><b>${asentamiento}</b></td>
-                <td>${cat.nombre}</td>
-                <td>${minVal.toLocaleString()} ${primarySym}</td>
-                <td>${promVal.toLocaleString()} ${primarySym}</td>
-                <td>${maxVal.toLocaleString()} ${primarySym}</td>
-                <td style="font-size: 0.8rem; color: var(--text-muted);">${cat.nota}</td>
-            `;
-            tbody.appendChild(tr);
-            filasRenderizadas++;
+            items.push({ categoria: cat.nombre, nota: cat.nota, min: minVal, prom: promVal, max: maxVal });
         });
+
+        if (items.length) secciones.push({ asentamiento, desc: conf.desc, mod: conf.modBase, items });
     });
 
-    if (filasRenderizadas === 0) {
-        tbody.innerHTML = `<tr class="empty-row"><td colspan="6">No hay resultados para los filtros seleccionados.</td></tr>`;
+    return { secciones, primarySym };
+}
+
+function renderizarMatrizPrecios() {
+    const container = document.getElementById('pricingContainer');
+    const { secciones, primarySym } = construirMatrizDatos();
+
+    if (secciones.length === 0) {
+        container.innerHTML = `<div class="empty-state">No hay resultados para los filtros seleccionados.</div>`;
+        return;
     }
+
+    const abrirPorDefecto = secciones.length === 1;
+    container.innerHTML = secciones.map(sec => `
+        <details class="settlement-section"${abrirPorDefecto ? ' open' : ''}>
+            <summary class="settlement-summary">
+                <div class="settlement-heading">
+                    <span class="name">${escapeHtml(sec.asentamiento)}</span>
+                    <span class="desc">${escapeHtml(sec.desc)}</span>
+                    <span class="mod">×${sec.mod}</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span class="settlement-count">${sec.items.length} ítem${sec.items.length === 1 ? '' : 's'}</span>
+                    <svg class="settlement-chevron" viewBox="0 0 20 20" fill="none"><path d="M5 7.5l5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+            </summary>
+            <div class="price-grid">
+                ${sec.items.map(it => `
+                    <div class="price-card">
+                        <div class="price-card-name">${escapeHtml(it.categoria)}</div>
+                        <div class="price-card-note">${escapeHtml(it.nota)}</div>
+                        <div class="price-card-stats">
+                            <div class="price-stat"><span>Mín</span><strong>${it.min.toLocaleString()} ${primarySym}</strong></div>
+                            <div class="price-stat prom"><span>Prom</span><strong>${it.prom.toLocaleString()} ${primarySym}</strong></div>
+                            <div class="price-stat"><span>Máx</span><strong>${it.max.toLocaleString()} ${primarySym}</strong></div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </details>
+    `).join('');
+
+    document.getElementById('btnExpandirSecciones').textContent = abrirPorDefecto ? '⇕ Colapsar todo' : '⇕ Expandir todo';
+}
+
+function toggleExpandirSecciones() {
+    const details = document.querySelectorAll('#pricingContainer details.settlement-section');
+    const algunoAbierto = Array.from(details).some(d => d.open);
+    details.forEach(d => d.open = !algunoAbierto);
+    document.getElementById('btnExpandirSecciones').textContent = algunoAbierto ? '⇕ Expandir todo' : '⇕ Colapsar todo';
+}
+
+function matrizComoFilas() {
+    const { secciones, primarySym } = construirMatrizDatos();
+    const rows = [["Asentamiento", "Categoría", `Mín (${primarySym})`, `Prom (${primarySym})`, `Máx (${primarySym})`, "Nota"]];
+    secciones.forEach(sec => {
+        sec.items.forEach(it => {
+            rows.push([sec.asentamiento, it.categoria, it.min, it.prom, it.max, it.nota]);
+        });
+    });
+    return rows;
 }
 
 function copiarMatrizCSV() {
-    const rows = [["Asentamiento", "Categoría", "Mín", "Prom", "Máx", "Nota"]];
-    document.querySelectorAll('#pricingTableBody tr').forEach(tr => {
-        const cells = Array.from(tr.children).map(td => td.textContent.trim());
-        if (cells.length === 6) rows.push(cells);
-    });
-    const csv = rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n');
+    const rows = matrizComoFilas();
+    const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
     if (navigator.clipboard) {
         navigator.clipboard.writeText(csv).then(() => mostrarToast("Tabla copiada como CSV")).catch(() => mostrarToast("No se pudo copiar automáticamente"));
     } else {
         mostrarToast("Portapapeles no disponible en este navegador");
     }
+}
+
+function descargarMatrizCSV() {
+    const rows = matrizComoFilas();
+    if (rows.length <= 1) { mostrarToast("No hay datos para exportar con estos filtros"); return; }
+    const csv = "\uFEFF" + rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `matriz_precios_casa_de_naipes_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    mostrarToast("CSV descargado");
 }
 
 /* ---------- Guardar / cargar sesión ---------- */
@@ -1038,6 +1202,18 @@ function exportarPDF() {
         `Tablero de Economía Imperial (DM) · Generado el ${new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })}`;
     if (headerOnly) headerOnly.style.display = 'block';
 
+    // html2canvas no aplica la hoja de estilos de @media print, así que
+    // ocultamos manualmente los controles interactivos (filtros, botones)
+    // para que no aparezcan en el reporte exportado.
+    const noPrintEls = element.querySelectorAll('.no-print');
+    noPrintEls.forEach(el => { el.dataset.prevDisplay = el.style.display; el.style.display = 'none'; });
+
+    // Forzamos la apertura de todas las secciones colapsadas de la matriz
+    // para que el PDF conserve toda la información, no solo lo visible en pantalla.
+    const detailsEls = element.querySelectorAll('details');
+    const prevOpenStates = Array.from(detailsEls).map(d => d.open);
+    detailsEls.forEach(d => d.open = true);
+
     const opt = {
         margin:       10,
         filename:     'Reporte_Economico_Casa_De_Naipes.pdf',
@@ -1047,9 +1223,16 @@ function exportarPDF() {
         pagebreak:    { mode: ['avoid-all', 'css'] }
     };
 
-    mostrarToast("Generando PDF...");
-    html2pdf().from(element).set(opt).save().then(() => {
+    function restaurar() {
         if (headerOnly) headerOnly.style.display = 'none';
+        noPrintEls.forEach(el => { el.style.display = el.dataset.prevDisplay || ''; delete el.dataset.prevDisplay; });
+        detailsEls.forEach((d, i) => { d.open = prevOpenStates[i]; });
+    }
+
+    mostrarToast("Generando PDF...");
+    html2pdf().from(element).set(opt).save().then(restaurar).catch(() => {
+        restaurar();
+        mostrarToast("No se pudo generar el PDF");
     });
 }
 
