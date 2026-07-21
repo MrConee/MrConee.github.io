@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D&D Combo Master Pro</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0f0f12;
+            color: #e2e8f0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container { max-width: 1000px; width: 100%; position: relative; }
+        
+        .app-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #2d2d39;
+            padding-bottom: 10px;
+        }
+        h2 { margin: 0; color: #f43f5e; text-transform: uppercase; letter-spacing: 2px; font-size: 24px; }
+        
+        .grid-layout { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        @media(min-width: 768px) { .grid-layout { grid-template-columns: 1fr 1fr; } }
+        
+        .box {
+            background-color: #1e1e24;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #2d2d39;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+        .box-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #fbbf24;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #2d2d39;
+            padding-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .form-group { margin-bottom: 12px; display: flex; flex-direction: column; }
+        .form-row { display: flex; gap: 10px; }
+        .form-row .form-group { flex: 1; }
+        label { font-size: 11px; color: #94a3b8; margin-bottom: 4px; text-transform: uppercase; font-weight: bold; }
+        input, select, textarea {
+            padding: 10px; background-color: #111116; border: 1px solid #3f3f46; border-radius: 6px; color: #fff; font-size: 14px;
+        }
+        input:focus, select:focus { border-color: #f43f5e; outline: none; }
+        input::placeholder, textarea::placeholder { color: #52525b; font-style: italic; font-size: 13px; }
+        
+        .btn { padding: 12px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+        .btn-save { background-color: #10b981; color: white; width: 100%; margin-top: 10px; }
+        .btn-save:hover { background-color: #059669; }
+        .btn-roll { background-color: #f43f5e; color: white; padding: 8px 16px; }
+        .btn-roll:hover { background-color: #e11d48; box-shadow: 0 0 12px rgba(244,63,94,0.4); }
+        .btn-delete { background-color: transparent; color: #64748b; }
+        .btn-delete:hover { color: #f43f5e; }
+
+        .combo-list { display: flex; flex-direction: column; gap: 10px; }
+        .combo-card {
+            background-color: #111116; border-left: 4px solid #f43f5e; padding: 14px; border-radius: 8px;
+            display: flex; justify-content: space-between; align-items: center; border: 1px solid #27272a; border-left-width: 4px; gap: 15px;
+        }
+        .combo-meta { flex: 1; }
+        .combo-meta .clave { font-size: 11px; background-color: #27272a; color: #fbbf24; padding: 2px 6px; border-radius: 4px; font-family: monospace; }
+        .combo-meta .nombre { font-size: 16px; font-weight: bold; color: #fff; margin-left: 5px; }
+        .combo-meta .desc { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+        .combo-meta .formulas { font-size: 11px; color: #38bdf8; margin-top: 6px; font-family: monospace; }
+        
+        .combo-actions { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+        .select-d20-live { padding: 5px; font-size: 12px; background-color: #1e1e24; border-color: #4b5563; color: #fbbf24; cursor: pointer; }
+
+        .report-box { grid-column: span 1; background-color: #141419; border: 1px solid #2d2d39; display: none; }
+        @media(min-width: 768px) { .report-box { grid-column: span 2; } }
+        
+        .report-header-interactive {
+            display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;
+            background: #1e1e24; padding: 15px; border-radius: 8px; margin-bottom: 20px; gap: 15px; border: 1px solid #2d2d39;
+        }
+
+        /* DISEÑO DE CONTENEDORES DE DATOS GLOBALES (MESA REAL) */
+        .report-summary-cards { display: flex; gap: 15px; width: 100%; justify-content: space-between; margin-bottom: 20px; }
+        .score-card {
+            background: #1e1e24; padding: 15px; border-radius: 8px; text-align: center; flex: 1;
+            border: 1px solid #2d2d39; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .score-card .val { font-size: 32px; font-weight: bold; color: #fbbf24; font-family: monospace; }
+        .score-card .val.dc-color { color: #38bdf8; }
+        .score-card .lbl { font-size: 11px; color: #94a3b8; text-transform: uppercase; margin-top: 4px; font-weight: bold; }
+
+        .burst-grid { display: flex; flex-direction: column; gap: 12px; }
+        
+        /* INTERFAZ TÁCTICA MEJORADA POR CADA ACCIÓN EJECUTADA */
+        .hit-card {
+            background: #1c1c21; border: 1px solid #2d2d39; border-radius: 8px;
+            padding: 14px 20px; display: grid; grid-template-columns: 130px 1fr 130px; align-items: center; gap: 20px;
+            position: relative; border-left: 6px solid #64748b;
+        }
+        
+        .hit-card.is-critico { border-left: 6px solid #fbbf24; background: #242016; }
+        .hit-card.is-pifia { border-left: 6px solid #ef4444; background: #1c1212; }
+
+        .hit-card .attack-result-badge { display: flex; flex-direction: column; }
+        .hit-card .attack-label { font-size: 10px; color: #94a3b8; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px; }
+        .hit-card .attack-number { font-size: 34px; font-weight: bold; color: #fff; line-height: 1; font-family: monospace; }
+        
+        .hit-card.is-critico .attack-number { color: #fbbf24; }
+        .hit-card.is-pifia .attack-number { color: #ef4444; }
+
+        .hit-card .attack-details { display: flex; flex-direction: column; gap: 3px; justify-content: center; }
+        .hit-card .math-line { font-size: 11px; color: #94a3b8; font-family: monospace; }
+        .hit-card .damage-line { font-size: 11px; color: #cbd5e1; font-family: monospace; }
+        .hit-card.is-critico .damage-line { color: #fef08a; }
+
+        .hit-card .damage-result-badge { text-align: right; display: flex; flex-direction: column; }
+        .hit-card .damage-number { font-size: 34px; font-weight: bold; color: #10b981; line-height: 1; font-family: monospace; }
+        .hit-card .damage-label { font-size: 10px; color: #94a3b8; text-transform: uppercase; font-weight: bold; }
+
+        .hit-card .audit-id-tag { position: absolute; bottom: 4px; right: 8px; font-size: 9px; color: #3f3f46; font-family: monospace; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="app-header">
+        <h2>D&D Combo Master Pro</h2>
+        <div style="font-size: 12px; color: #64748b; font-weight: bold; text-transform: uppercase;">Build: UX-PureTable v7.0</div>
+    </div>
+
+    <div class="grid-layout">
+        <!-- CONFIGURACIÓN -->
+        <div class="box">
+            <div class="box-title">Configurar Combo / Hechizo</div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Clave</label>
+                    <input type="text" id="cfgClave" placeholder="Ej: FIREBALL_N3">
+                </div>
+                <div class="form-group">
+                    <label>Nombre</label>
+                    <input type="text" id="cfgNombre" placeholder="Ej: Bola de Fuego (Nivel 3)">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Descripción</label>
+                <textarea id="cfgDesc" rows="2" placeholder="Ej: Salvación de Destreza. Mitad de daño si pasan..."></textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Proficiencia</label><input type="number" id="cfgProf" value="3"></div>
+                <div class="form-group"><label>Estadística / Modificador</label><input type="number" id="cfgStatAtk" value="4"></div>
+                <div class="form-group">
+                    <label>Spell DC (Opcional)</label>
+                    <input type="number" id="cfgDC" value="0" placeholder="Ej: 15">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Daño Base (Dados + Mod)</label>
+                <input type="text" id="cfgDanoBase" placeholder="Ej: 8d6 o 2d6 + 4">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Buff al Ataque</label>
+                    <input type="text" id="cfgBuffAtk" placeholder="Ej: 1d4 o 0">
+                </div>
+                <div class="form-group">
+                    <label>Buff al Daño</label>
+                    <input type="text" id="cfgBuffDano" placeholder="Ej: 1d6 o 0">
+                </div>
+            </div>
+            <button class="btn btn-save" onclick="guardarCombo()">Guardar Combo / Hechizo</button>
+        </div>
+
+        <!-- REPOSITORIO -->
+        <div class="box">
+            <div class="box-title">Menú de Plantillas Guardadas</div>
+            <div class="form-group">
+                <label>Nº de ejecuciones en esta acción (Ataques o Objetivos)</label>
+                <input type="number" id="numAtaquesGlobal" value="3" min="1" style="border-color: #fbbf24;">
+            </div>
+            <div id="listaCombos" class="combo-list"></div>
+        </div>
+
+        <!-- INFORME DE RESULTADOS -->
+        <div id="boxInforme" class="box report-box">
+            <div class="report-header-interactive">
+                <div>
+                    <div id="reporteComboTitulo" style="font-size: 18px; font-weight: bold; color: #fff;">Resultados de Ejecución</div>
+                    <div id="reporteComboDesc" style="font-size: 12px; color: #94a3b8;">Lectura directa para cantar en mesa</div>
+                </div>
+            </div>
+            
+            <div class="report-summary-cards">
+                <div class="score-card">
+                    <div id="infTotalDanoAcumulado" class="val">0</div>
+                    <div class="lbl">Suma Total Daño Rodado</div>
+                </div>
+                <!-- El bloque DC se oculta o muestra mediante JS dinámico -->
+                <div class="score-card" id="cardContenedorDC">
+                    <div id="infValDC" class="val dc-color">0</div>
+                    <div class="lbl">Dificultad de Salva (DC)</div>
+                </div>
+            </div>
+
+            <div id="burstGridResultados" class="burst-grid"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", cargarCombos);
+    let ultimaRafagaLanzada = [];
+
+    function d(caras) { return Math.floor(Math.random() * caras) + 1; }
+
+    function resolverDadosTexto(cadena) {
+        let textoLimpio = cadena.toLowerCase().replace(/\s+/g, '');
+        if (!textoLimpio || textoLimpio === '0') return { total: 0, desglose: "0" };
+        let terminos = textoLimpio.split('+');
+        let totalAcumulado = 0; let desgloses = [];
+
+        terminos.forEach(termino => {
+            if (termino.includes('d')) {
+                let partes = termino.split('d');
+                let cantidad = parseInt(partes[0]) || 1;
+                let caras = parseInt(partes[1]) || 6;
+                let subtotal = 0; let subDados = [];
+                for (let i = 0; i < cantidad; i++) {
+                    let r = d(caras); subtotal += r; subDados.push(r);
+                }
+                totalAcumulado += subtotal; desgloses.push(`[${subDados.join('+')}]`);
+            } else {
+                let valorFijo = parseInt(termino) || 0;
+                totalAcumulado += valorFijo;
+                if(valorFijo !== 0) desgloses.push(`${valorFijo}`);
+            }
+        });
+        return { total: totalAcumulado, desglose: desgloses.join('+') };
+    }
+
+    function guardarCombo() {
+        const clave = document.getElementById('cfgClave').value.trim().toUpperCase();
+        const nombre = document.getElementById('cfgNombre').value.trim();
+        if (!clave || !nombre) return alert("Rellena Clave y Nombre.");
+        
+        const combo = {
+            clave, nombre, desc: document.getElementById('cfgDesc').value,
+            prof: parseInt(document.getElementById('cfgProf').value) || 0,
+            statAtk: parseInt(document.getElementById('cfgStatAtk').value) || 0,
+            dc: parseInt(document.getElementById('cfgDC').value) || 0,
+            danoBase: document.getElementById('cfgDanoBase').value || "0",
+            buffAtk: document.getElementById('cfgBuffAtk').value || "0",
+            buffDano: document.getElementById('cfgBuffDano').value || "0"
+        };
+        
+        let combos = JSON.parse(localStorage.getItem('dd_combos_pure_v7')) || {};
+        combos[clave] = combo; 
+        localStorage.setItem('dd_combos_pure_v7', JSON.stringify(combos));
+        cargarCombos();
+        
+        document.getElementById('cfgClave').value = '';
+        document.getElementById('cfgNombre').value = '';
+        document.getElementById('cfgDesc').value = '';
+        document.getElementById('cfgDC').value = '0';
+    }
+
+    function cargarCombos() {
+        const contenedor = document.getElementById('listaCombos'); contenedor.innerHTML = "";
+        const combos = JSON.parse(localStorage.getItem('dd_combos_pure_v7')) || {};
+        for (const clave in combos) {
+            const c = combos[clave];
+            const card = document.createElement('div'); card.className = 'combo-card';
+            
+            let indicadorDC = c.dc > 0 ? ` <span style="color:#38bdf8; font-weight:bold;">[DC ${c.dc}]</span>` : '';
+            
+            card.innerHTML = `
+                <div class="combo-meta">
+                    <span class="clave">${c.clave}</span><span class="nombre">${c.nombre}${indicadorDC}</span>
+                    <div class="desc">${c.desc || ''}</div>
+                    <div class="formulas">Bono Atk: +${c.prof+c.statAtk} | Daño: ${c.danoBase} + (${c.buffDano})</div>
+                </div>
+                <div class="combo-actions">
+                    <select id="modLive-${clave}" class="select-d20-live">
+                        <option value="normal">🎲 Normal</option>
+                        <option value="ventaja">🟢 Ventaja</option>
+                        <option value="desventaja">🔴 Desventaja</option>
+                    </select>
+                    <div style="display:flex; gap:6px;">
+                        <button class="btn btn-roll" onclick="ejecutarCombo('${clave}')">LANZAR</button>
+                        <button class="btn btn-delete" onclick="eliminarCombo('${clave}')">❌</button>
+                    </div>
+                </div>`;
+            contenedor.appendChild(card);
+        }
+    }
+
+    function eliminarCombo(clave) {
+        let combos = JSON.parse(localStorage.getItem('dd_combos_pure_v7')) || {};
+        delete combos[clave]; 
+        localStorage.setItem('dd_combos_pure_v7', JSON.stringify(combos));
+        cargarCombos();
+    }
+
+    function ejecutarCombo(clave) {
+        const combos = JSON.parse(localStorage.getItem('dd_combos_pure_v7')) || {};
+        const combo = combos[clave]; if (!combo) return;
+
+        const numAtaques = parseInt(document.getElementById('numAtaquesGlobal').value) || 1;
+        const modD20Live = document.getElementById(`modLive-${clave}`).value;
+        const hashSesion = Date.now().toString().slice(-4);
+        ultimaRafagaLanzada = [];
+
+        document.getElementById('reporteComboTitulo').innerText = `${combo.nombre}`;
+        document.getElementById('reporteComboDesc').innerText = combo.desc || 'Valores crudos de dados';
+
+        // Manejo UI del bloque DC Informativo
+        const contenedorDC = document.getElementById('cardContenedorDC');
+        if (combo.dc && combo.dc > 0) {
+            contenedorDC.style.display = 'block';
+            document.getElementById('infValDC').innerText = combo.dc;
+        } else {
+            contenedorDC.style.display = 'none';
+        }
+
+        let totalDanoAcumuladoRafaga = 0;
+
+        for (let i = 1; i <= numAtaques; i++) {
+            let r1 = d(20); let r2 = d(20);
+            let d20Final = r1;
+            let anotacionDados = `${r1}`;
+            
+            if (modD20Live === 'ventaja') {
+                d20Final = Math.max(r1, r2);
+                anotacionDados = `Ventaja [${r1}, ${r2}]`;
+            }
+            if (modD20Live === 'desventaja') {
+                d20Final = Math.min(r1, r2);
+                anotacionDados = `Desventaja [${r1}, ${r2}]`;
+            }
+
+            let esCritico = (d20Final === 20); let esPifia = (d20Final === 1);
+            let resBuffAtk = resolverDadosTexto(combo.buffAtk);
+            let bonoFijoAtk = combo.prof + combo.statAtk;
+            let totalToHit = d20Final + bonoFijoAtk + resBuffAtk.total;
+
+            let totalDano = 0; let desgloseTexto = "";
+
+            let fBase = combo.danoBase; let fBuff = combo.buffDano;
+            if (esCritico) {
+                fBase = fBase.replace(/[0-9]+(?=d)/g, m => m * 2);
+                fBuff = fBuff.replace(/[0-9]+(?=d)/g, m => m * 2);
+            }
+            let rBase = resolverDadosTexto(fBase); let rBuff = resolverDadosTexto(fBuff);
+            totalDano = rBase.total + rBuff.total;
+            desgloseTexto = `Base: ${rBase.total}(${rBase.desglose}) + Buff: ${rBuff.total}(${rBuff.desglose})`;
+
+            totalDanoAcumuladoRafaga += totalDano;
+
+            ultimaRafagaLanzada.push({
+                id: `#ATK-${hashSesion}-${i}`, nat20: d20Final, totalToHit: totalToHit,
+                formulaToHit: `d20:${anotacionDados} + Mod:${bonoFijoAtk} + Buff:${resBuffAtk.total}`,
+                totalDano: totalDano, desgloseDano: desgloseTexto, esCritico, esPifia
+            });
+        }
+
+        document.getElementById('boxInforme').style.display = 'block';
+        document.getElementById('infTotalDanoAcumulado').innerText = totalDanoAcumuladoRafaga;
+
+        // Renderizar la lista de tarjetas
+        const grid = document.getElementById('burstGridResultados'); grid.innerHTML = "";
+        ultimaRafagaLanzada.forEach(atk => {
+            let modificadorClase = "";
+            let textoResultadoAtaque = atk.totalToHit;
+
+            if (atk.esCritico) { modificadorClase = "is-critico"; textoResultadoAtaque = "CRÍTICO"; }
+            else if (atk.esPifia) { modificadorClase = "is-pifia"; textoResultadoAtaque = "PIFIA"; }
+
+            const card = document.createElement('div');
+            card.className = `hit-card ${modificadorClase}`;
+            
+            card.innerHTML = `
+                <div class="attack-result-badge">
+                    <div class="attack-label">${atk.esCritico || atk.esPifia ? 'Estado' : 'Ataque Total'}</div>
+                    <div class="attack-number">${textoResultadoAtaque}</div>
+                </div>
+                <div class="attack-details">
+                    <div class="math-line">${atk.formulaToHit}</div>
+                    <div class="damage-line">${atk.desgloseDano}</div>
+                </div>
+                <div class="damage-result-badge">
+                    <div class="damage-label">Daño Rolado</div>
+                    <div class="damage-number">${atk.totalDano}</div>
+                </div>
+                <div class="audit-id-tag">${atk.id}</div>`;
+            grid.appendChild(card);
+        });
+
+        document.getElementById('boxInforme').scrollIntoView({ behavior: 'smooth' });
+    }
+</script>
+</body>
+</html>
