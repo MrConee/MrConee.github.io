@@ -1,1335 +1,183 @@
 # MrConee.github.io
 BaulDeHerramientasDnD
+# 🧰 Baúl de Herramientas para D&D <a href="index.html">(clic aquí)</>
 
-<!DOCTYPE html><html lang="es">
-    <head>
-    <meta charset="UTF-8">
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-    <meta
-        name="description"
-        content="Baúl de Herramientas D&D. Una colección gratuita de herramientas para jugadores y Dungeon Masters."
-    >
-    <title>Baúl Imperial de Herramientas D&D</title>
-    <style>
-        /* =====================================================
-           CONFIGURACIÓN GENERAL
-        ===================================================== */
-        :root {
-            --fondo: #11100e;
-            --fondo-secundario: #1a1814;
-            --panel: #211e19;
-            --panel-hover: #2a261f;
+Una colección gratuita de herramientas web sencillas para ayudar a **Jugadores y Dungeon Masters** durante sus partidas de **Dungeons & Dragons**.
 
-            --dorado: #c9a45c;
-            --dorado-claro: #e2c27b;
+El objetivo de este proyecto es crear herramientas prácticas que permitan resolver rápidamente algunas de las tareas más comunes que aparecen durante una partida, evitando tener que recurrir constantemente a cálculos manuales, tablas o aplicaciones externas.
 
-            --rojo: #8e302b;
-            --rojo-claro: #b64b43;
+> 🎲 Menos tiempo administrando la partida.
+> ⚔️ Más tiempo jugando la aventura.
 
-            --texto: #eee7d7;
-            --texto-secundario: #b9b09e;
+---
 
-            --borde: rgba(201, 164, 92, 0.3);
+## 🌐 Acceder a las herramientas
 
-            --sombra:
-                0 10px 30px rgba(0, 0, 0, 0.35);
+Todas las herramientas están disponibles gratuitamente desde la página principal del proyecto:
 
-            --transicion:
-                all 0.25s ease;
-        }
+### 🏰 [Baúl de Herramientas D&D](https://mrconee.github.io/)
 
+Desde allí podrás acceder a las diferentes herramientas disponibles.
 
-        /* =====================================================
-           RESET
-        ===================================================== */
+---
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+# 🛠️ Herramientas
 
+Actualmente el proyecto incluye o está desarrollando las siguientes herramientas:
 
-        html {
-            scroll-behavior: smooth;
-        }
+---
 
+## ⚔️ Gestor de Combates
 
-        body {
-            font-family:
-                Georgia,
-                "Times New Roman",
-                serif;
+Una herramienta para facilitar la administración de combates durante las partidas.
 
-            background:
-                radial-gradient(
-                    circle at top,
-                    #28231b 0%,
-                    var(--fondo) 45%
-                );
+Permite gestionar información como:
 
-            color: var(--texto);
+* Participantes del combate.
+* Iniciativa.
+* Puntos de golpe.
+* Clase de Armadura.
+* Orden de los turnos.
+* Rondas de combate.
+* Estado de los participantes.
 
-            min-height: 100vh;
+La herramienta está pensada principalmente para ayudar al Dungeon Master a mantener toda la información relevante del combate organizada en un solo lugar y facilitar el seguimiento del encuentro a medida que avanza.
 
-            line-height: 1.6;
-        }
+---
 
+## 🎲 Tirador de Dados para Dungeon Master
 
-        a {
-            color: inherit;
-            text-decoration: none;
-        }
+Una herramienta diseñada para facilitar las tiradas de ataque de múltiples criaturas y entidades durante un combate.
 
+El Dungeon Master puede configurar diferentes entidades y preparar los ataques de cada una de ellas para utilizarlos rápidamente durante la partida. Esto permite realizar repetidamente las tiradas necesarias conforme avanza el combate, evitando tener que configurar nuevamente cada ataque cada vez que una criatura actúa.
 
-        button,
-        input {
-            font-family: inherit;
-        }
+Está pensada especialmente para encuentros con múltiples enemigos o criaturas que realizan ataques de forma recurrente.
 
+Entre sus funciones se contempla:
 
-        /* =====================================================
-           BARRA SUPERIOR
-        ===================================================== */
+* Configuración de múltiples entidades.
+* Configuración de los ataques de cada entidad.
+* Acceso rápido a las tiradas preparadas.
+* Realización repetida de ataques durante el combate.
+* Facilidad para consultar y utilizar diferentes ataques conforme los necesite el Dungeon Master.
 
-        header {
-            position: sticky;
-            top: 0;
+La intención es reducir el tiempo que el DM pasa preparando y realizando tiradas, permitiéndole concentrarse en dirigir el encuentro y mantener el ritmo de la partida.
 
-            z-index: 1000;
+---
 
-            background:
-                rgba(17, 16, 14, 0.95);
+## 🕰️ Gestor de Iniciativa
 
-            backdrop-filter:
-                blur(10px);
+Una herramienta destinada a facilitar el seguimiento del orden de iniciativa durante los combates.
 
-            border-bottom:
-                1px solid var(--borde);
+Su objetivo es permitir que el Dungeon Master pueda consultar rápidamente quién debe actuar y mantener el combate organizado.
 
-            box-shadow:
-                0 4px 20px rgba(0, 0, 0, 0.3);
-        }
+La herramienta busca simplificar la administración del orden de turnos y reducir el tiempo dedicado a llevar el control manual de la iniciativa.
 
+---
 
-        .navbar {
-            max-width: 1200px;
+## ☠️ Buscador de Enfermedades
 
-            margin: auto;
+Una herramienta de consulta rápida para buscar enfermedades y efectos relacionados.
 
-            padding:
-                15px 25px;
+Pensada para facilitar la consulta de información durante una partida cuando un personaje o criatura se encuentra afectado por algún padecimiento.
 
-            display: flex;
+Su objetivo es permitir al Dungeon Master y a los jugadores encontrar rápidamente la información necesaria sin tener que revisar manualmente grandes cantidades de contenido.
 
-            justify-content:
-                space-between;
+---
 
-            align-items: center;
+## 💰 Generador de Economía
 
-            gap: 20px;
-        }
+Una herramienta destinada a ayudar con la generación y gestión de elementos relacionados con la economía de una campaña.
 
+Su objetivo es facilitar la creación de valores y recursos que puedan ser utilizados por Dungeon Masters para enriquecer sus mundos y aventuras.
 
-        .logo {
-            display: flex;
+Puede utilizarse como apoyo para desarrollar sistemas económicos, generar recursos o facilitar la administración de diferentes elementos relacionados con la economía de una campaña.
 
-            align-items: center;
+---
 
-            gap: 12px;
+# 💾 ¿Cómo funcionan las herramientas?
 
-            font-size: 1.15rem;
+El proyecto está diseñado para funcionar directamente desde el navegador.
 
-            font-weight: bold;
+Las herramientas utilizan tecnologías web estándar como:
 
-            letter-spacing:
-                1px;
+* HTML
+* CSS
+* JavaScript
 
-            color:
-                var(--dorado-claro);
-        }
+La información utilizada por las herramientas puede almacenarse localmente en el navegador mediante tecnologías de almacenamiento web.
 
+Esto significa que:
 
-        .logo-symbol {
-            width: 42px;
+* No es necesario instalar programas.
+* No es necesario crear una cuenta.
+* No es necesario contratar un servicio.
+* No es necesario disponer de un servidor propio.
+* Las herramientas pueden utilizarse directamente desde un navegador web compatible.
 
-            height: 42px;
+> ⚠️ **Importante:** Debido a que algunas herramientas almacenan información localmente en el navegador, los datos guardados pueden no estar disponibles si se cambia de dispositivo o navegador, o si se eliminan los datos del sitio.
 
-            border:
-                2px solid var(--dorado);
+---
 
-            border-radius: 50%;
+# 🎯 Objetivo del proyecto
 
-            display: flex;
+Este proyecto nace como una iniciativa personal para crear pequeñas herramientas que puedan ser útiles durante las partidas de D&D.
 
-            align-items: center;
+La intención es mantenerlas:
 
-            justify-content: center;
+* 🆓 Gratuitas.
+* 🌐 Fáciles de acceder.
+* 🧩 Sencillas de utilizar.
+* 🛠️ En constante mejora.
 
-            font-size: 1.4rem;
+No busco convertir estas herramientas en un servicio de suscripción ni establecer barreras de pago para su utilización.
 
-            background:
-                rgba(201, 164, 92, 0.08);
-        }
+La idea es que cualquier jugador o Dungeon Master pueda acceder a ellas y utilizarlas libremente durante sus partidas.
 
+---
 
-        .nav-links {
-            display: flex;
+# 🚧 Proyecto en desarrollo
 
-            gap: 25px;
+El proyecto continúa en desarrollo y las herramientas pueden recibir actualizaciones, mejoras y nuevas funciones.
 
-            list-style: none;
-        }
+Algunas funcionalidades pueden encontrarse todavía en una etapa experimental o estar sujetas a cambios.
 
+Iré incorporando nuevas herramientas y mejoras progresivamente.
 
-        .nav-links a {
-            color:
-                var(--texto-secundario);
+El objetivo es que este proyecto vaya creciendo poco a poco hasta convertirse en una colección cada vez más completa de utilidades para jugadores y Dungeon Masters.
 
-            transition:
-                var(--transicion);
+---
 
-            font-size:
-                0.95rem;
-        }
+# 💡 Sugerencias y mejoras
 
+Si tienes alguna sugerencia para una nueva herramienta, encuentras algún problema o tienes alguna idea que pueda mejorar el proyecto, puedes compartirla mediante los sistemas de colaboración disponibles en GitHub.
 
-        .nav-links a:hover {
-            color:
-                var(--dorado-claro);
-        }
+Las sugerencias son bienvenidas y pueden ayudar a decidir qué herramientas desarrollar en el futuro.
 
+---
 
-        /* =====================================================
-           HERO
-        ===================================================== */
+# 📜 Licencia y uso
 
-        .hero {
-            max-width: 1100px;
+Este proyecto ha sido creado con la intención de proporcionar herramientas gratuitas para la comunidad de jugadores y Dungeon Masters.
 
-            margin:
-                0 auto;
+El contenido y código de este repositorio se encuentra sujeto a la licencia indicada en los archivos del proyecto.
 
-            padding:
-                90px 25px 70px;
+Consulta el archivo `LICENSE` para conocer las condiciones específicas de uso, modificación y distribución.
 
-            text-align:
-                center;
-        }
+---
 
+# 🎲 Dungeons & Dragons
 
-        .imperial-label {
-            display:
-                inline-block;
+**Dungeons & Dragons** es una marca registrada de Wizards of the Coast.
 
-            padding:
-                6px 16px;
+Este proyecto es una iniciativa independiente y no está afiliado, patrocinado ni respaldado oficialmente por Wizards of the Coast.
 
-            margin-bottom:
-                20px;
+---
 
-            border:
-                1px solid var(--borde);
+## 🏰 Baúl de Herramientas para D&D
 
-            color:
-                var(--dorado);
+**Creado por MrConee**
 
-            font-size:
-                0.75rem;
+Herramientas gratuitas para jugadores y Dungeon Masters.
 
-            letter-spacing:
-                3px;
-
-            text-transform:
-                uppercase;
-        }
-
-
-        .hero h1 {
-            font-size:
-                clamp(2.3rem, 6vw, 4.8rem);
-
-            line-height:
-                1.1;
-
-            margin-bottom:
-                20px;
-
-            color:
-                var(--dorado-claro);
-
-            text-shadow:
-                0 4px 20px rgba(0, 0, 0, 0.6);
-        }
-
-
-        .hero-subtitle {
-            max-width:
-                720px;
-
-            margin:
-                0 auto 30px;
-
-            font-size:
-                1.15rem;
-
-            color:
-                var(--texto-secundario);
-        }
-
-
-        .hero-quote {
-            max-width:
-                650px;
-
-            margin:
-                auto;
-
-            padding:
-                18px 25px;
-
-            border-left:
-                3px solid var(--rojo);
-
-            background:
-                rgba(255, 255, 255, 0.025);
-
-            color:
-                #d5ccba;
-
-            font-style:
-                italic;
-
-            text-align:
-                left;
-        }
-
-
-        /* =====================================================
-           BOTÓN PRINCIPAL
-        ===================================================== */
-
-        .main-button {
-            display:
-                inline-block;
-
-            margin-top:
-                30px;
-
-            padding:
-                12px 25px;
-
-            background:
-                var(--rojo);
-
-            border:
-                1px solid var(--rojo-claro);
-
-            color:
-                white;
-
-            cursor:
-                pointer;
-
-            transition:
-                var(--transicion);
-
-            font-weight:
-                bold;
-
-            letter-spacing:
-                0.5px;
-        }
-
-
-        .main-button:hover {
-            background:
-                var(--rojo-claro);
-
-            transform:
-                translateY(-2px);
-
-            box-shadow:
-                0 8px 20px rgba(142, 48, 43, 0.3);
-        }
-
-
-        /* =====================================================
-           SECCIÓN DE HERRAMIENTAS
-        ===================================================== */
-
-        .tools-section {
-            max-width:
-                1200px;
-
-            margin:
-                auto;
-
-            padding:
-                40px 25px 100px;
-        }
-
-
-        .section-header {
-            display:
-                flex;
-
-            justify-content:
-                space-between;
-
-            align-items:
-                flex-end;
-
-            gap:
-                20px;
-
-            margin-bottom:
-                30px;
-
-            flex-wrap:
-                wrap;
-        }
-
-
-        .section-title h2 {
-            color:
-                var(--dorado-claro);
-
-            font-size:
-                2rem;
-
-            margin-bottom:
-                5px;
-        }
-
-
-        .section-title p {
-            color:
-                var(--texto-secundario);
-        }
-
-
-        /* =====================================================
-           BUSCADOR
-        ===================================================== */
-
-        .search-box {
-            position:
-                relative;
-
-            width:
-                280px;
-        }
-
-
-        .search-box input {
-            width:
-                100%;
-
-            padding:
-                12px 15px;
-
-            background:
-                var(--panel);
-
-            border:
-                1px solid var(--borde);
-
-            color:
-                var(--texto);
-
-            outline:
-                none;
-
-            transition:
-                var(--transicion);
-        }
-
-
-        .search-box input:focus {
-            border-color:
-                var(--dorado);
-        }
-
-
-        /* =====================================================
-           GRID
-        ===================================================== */
-
-        .tools-grid {
-            display:
-                grid;
-
-            grid-template-columns:
-                repeat(
-                    auto-fit,
-                    minmax(280px, 1fr)
-                );
-
-            gap:
-                20px;
-        }
-
-
-        /* =====================================================
-           TARJETAS
-        ===================================================== */
-
-        .tool-card {
-            position:
-                relative;
-
-            display:
-                flex;
-
-            flex-direction:
-                column;
-
-            min-height:
-                300px;
-
-            padding:
-                28px;
-
-            background:
-                linear-gradient(
-                    145deg,
-                    var(--panel),
-                    #181612
-                );
-
-            border:
-                1px solid var(--borde);
-
-            box-shadow:
-                var(--sombra);
-
-            transition:
-                var(--transicion);
-
-            overflow:
-                hidden;
-        }
-
-
-        .tool-card::before {
-            content:
-                "";
-
-            position:
-                absolute;
-
-            top:
-                0;
-
-            left:
-                0;
-
-            width:
-                100%;
-
-            height:
-                3px;
-
-            background:
-                var(--dorado);
-
-            transform:
-                scaleX(0);
-
-            transform-origin:
-                left;
-
-            transition:
-                var(--transicion);
-        }
-
-
-        .tool-card:hover {
-            transform:
-                translateY(-6px);
-
-            background:
-                var(--panel-hover);
-
-            border-color:
-                rgba(
-                    201,
-                    164,
-                    92,
-                    0.65
-                );
-
-            box-shadow:
-                0 15px 40px
-                rgba(
-                    0,
-                    0,
-                    0,
-                    0.5
-                );
-        }
-
-
-        .tool-card:hover::before {
-            transform:
-                scaleX(1);
-        }
-
-
-        .tool-icon {
-            width:
-                60px;
-
-            height:
-                60px;
-
-            display:
-                flex;
-
-            align-items:
-                center;
-
-            justify-content:
-                center;
-
-            font-size:
-                2rem;
-
-            border:
-                1px solid var(--borde);
-
-            background:
-                rgba(
-                    201,
-                    164,
-                    92,
-                    0.06
-                );
-
-            margin-bottom:
-                20px;
-        }
-
-
-        .tool-card h3 {
-            color:
-                var(--dorado-claro);
-
-            font-size:
-                1.35rem;
-
-            margin-bottom:
-                10px;
-        }
-
-
-        .tool-card p {
-            color:
-                var(--texto-secundario);
-
-            font-size:
-                0.95rem;
-
-            flex-grow:
-                1;
-        }
-
-
-        .tool-button {
-            display:
-                inline-block;
-
-            margin-top:
-                25px;
-
-            padding:
-                10px 15px;
-
-            border:
-                1px solid var(--borde);
-
-            color:
-                var(--dorado-claro);
-
-            text-align:
-                center;
-
-            transition:
-                var(--transicion);
-        }
-
-
-        .tool-card:hover .tool-button {
-            background:
-                var(--rojo);
-
-            border-color:
-                var(--rojo-claro);
-
-            color:
-                white;
-        }
-
-
-        /* =====================================================
-           AVISO IMPERIAL
-        ===================================================== */
-
-        .notice {
-            max-width:
-                900px;
-
-            margin:
-                0 auto 80px;
-
-            padding:
-                25px;
-
-            border:
-                1px solid
-                rgba(
-                    142,
-                    48,
-                    43,
-                    0.5
-                );
-
-            background:
-                rgba(
-                    142,
-                    48,
-                    43,
-                    0.07
-                );
-
-            text-align:
-                center;
-        }
-
-
-        .notice h3 {
-            color:
-                var(--rojo-claro);
-
-            margin-bottom:
-                10px;
-        }
-
-
-        .notice p {
-            color:
-                var(--texto-secundario);
-
-            font-size:
-                0.9rem;
-        }
-
-
-        /* =====================================================
-           FOOTER
-        ===================================================== */
-
-        footer {
-            border-top:
-                1px solid var(--borde);
-
-            padding:
-                35px 25px;
-
-            text-align:
-                center;
-
-            color:
-                var(--texto-secundario);
-
-            background:
-                rgba(
-                    0,
-                    0,
-                    0,
-                    0.2
-                );
-        }
-
-
-        footer strong {
-            color:
-                var(--dorado);
-        }
-
-
-        /* =====================================================
-           RESPONSIVE
-        ===================================================== */
-
-        @media (
-            max-width:
-            700px
-        ) {
-
-            .navbar {
-                flex-direction:
-                    column;
-            }
-
-            .nav-links {
-                gap:
-                    15px;
-
-                flex-wrap:
-                    wrap;
-
-                justify-content:
-                    center;
-            }
-
-            .hero {
-                padding-top:
-                    60px;
-            }
-
-            .section-header {
-                align-items:
-                    stretch;
-            }
-
-            .search-box {
-                width:
-                    100%;
-            }
-
-        }
-
-    </style>
-</head>
-
-
-<body>
-
-
-    <!-- =====================================================
-         NAVEGACIÓN
-    ====================================================== -->
-
-    <header>
-
-        <nav class="navbar">
-
-            <a
-                href="index.html"
-                class="logo"
-            >
-
-                <span class="logo-symbol">
-                    🏰
-                </span>
-
-                <span>
-                    Baúl Imperial D&D
-                </span>
-
-            </a>
-
-
-            <ul class="nav-links">
-
-                <li>
-                    <a href="#inicio">
-                        Inicio
-                    </a>
-                </li>
-
-                <li>
-                    <a href="#herramientas">
-                        Herramientas
-                    </a>
-                </li>
-
-                <li>
-                    <a href="#aviso">
-                        Aviso Imperial
-                    </a>
-                </li>
-
-            </ul>
-
-        </nav>
-
-    </header>
-
-
-
-    <!-- =====================================================
-         HERO
-    ====================================================== -->
-
-    <main>
-
-        <section
-            class="hero"
-            id="inicio"
-        >
-
-            <div class="imperial-label">
-
-                Oficina General de Utilidades
-
-            </div>
-
-
-            <h1>
-
-                Baúl Imperial
-                <br>
-                de Herramientas D&D
-
-            </h1>
-
-
-            <p class="hero-subtitle">
-
-                Una colección gratuita de herramientas
-                diseñadas para facilitar la vida de
-                jugadores y Dungeon Masters.
-
-            </p>
-
-
-            <div class="hero-quote">
-
-                "Porque ninguna aventura debería fracasar
-                por culpa de una mala organización
-                administrativa."
-
-            </div>
-
-
-            <a
-                href="#herramientas"
-                class="main-button"
-            >
-
-                CONSULTAR HERRAMIENTAS
-
-            </a>
-
-        </section>
-
-
-
-        <!-- =================================================
-             HERRAMIENTAS
-        ================================================== -->
-
-        <section
-            class="tools-section"
-            id="herramientas"
-        >
-
-
-            <div class="section-header">
-
-
-                <div class="section-title">
-
-                    <h2>
-                        Herramientas Disponibles
-                    </h2>
-
-                    <p>
-                        Servicios oficialmente autorizados
-                        por la administración competente.
-                    </p>
-
-                </div>
-
-
-                <div class="search-box">
-
-                    <input
-                        type="text"
-                        id="searchInput"
-                        placeholder="Buscar herramienta..."
-                        aria-label="Buscar herramienta"
-                    >
-
-                </div>
-
-
-            </div>
-
-
-
-            <div
-                class="tools-grid"
-                id="toolsGrid"
-            >
-
-
-                <!-- =========================================
-                     HERRAMIENTA 1
-                ========================================== -->
-
-                <a
-                    href="administrador de combos_v4.html"
-                    class="tool-card"
-                    data-name="gestor combate combate batalla"
-                >
-
-                    <div class="tool-icon">
-                        ⚔️
-                    </div>
-
-
-                    <h3>
-                        Gestor Imperial de Combates
-                    </h3>
-
-
-                    <p>
-
-                        Administra participantes,
-                        iniciativa, puntos de golpe
-                        y el desarrollo de los combates.
-
-                        <br><br>
-
-                        Porque incluso la violencia
-                        requiere una adecuada
-                        documentación.
-
-                    </p>
-
-
-                    <span class="tool-button">
-
-                        ACCEDER AL GESTOR →
-
-                    </span>
-
-                </a>
-
-
-
-                <!-- =========================================
-                     HERRAMIENTA 2
-                ========================================== -->
-
-                <a
-                    href="dm_roller_v4.html"
-                    class="tool-card"
-                    data-name="tirador dados dados d20 lanzar"
-                >
-
-                    <div class="tool-icon">
-                        🎲
-                    </div>
-
-
-                    <h3>
-                        Departamento de Dados
-                    </h3>
-
-
-                    <p>
-
-                        Realiza tiradas de dados
-                        de forma rápida y sencilla
-                        durante tus partidas.
-
-                        <br><br>
-
-                        Los resultados son
-                        completamente imparciales.
-                        Probablemente.
-
-                    </p>
-
-
-                    <span class="tool-button">
-
-                        REALIZAR TIRADA →
-
-                    </span>
-
-                </a>
-
-
-
-                <!-- =========================================
-                     HERRAMIENTA 3
-                ========================================== -->
-
-                <a
-                    href="index_help_iniciativa.html"
-                    class="tool-card"
-                    data-name="gestor iniciativa orden combate turnos"
-                >
-
-                    <div class="tool-icon">
-                        🕰️
-                    </div>
-
-
-                    <h3>
-                        Registro Imperial de Iniciativa
-                    </h3>
-
-
-                    <p>
-
-                        Gestiona el orden de actuación
-                        de todos los participantes
-                        durante el combate.
-
-                        <br><br>
-
-                        Porque decidir quién golpea
-                        primero es un asunto
-                        de importancia nacional.
-
-                    </p>
-
-
-                    <span class="tool-button">
-
-                        CONSULTAR REGISTRO →
-
-                    </span>
-
-                </a>
-
-
-
-                <!-- =========================================
-                     HERRAMIENTA 4
-                ========================================== -->
-
-                <a
-                    href="indice_enfermedades.html"
-                    class="tool-card"
-                    data-name="buscador enfermedades enfermedades peste veneno"
-                >
-
-                    <div class="tool-icon">
-                        ☠️
-                    </div>
-
-
-                    <h3>
-                        Instituto de Enfermedades
-                    </h3>
-
-
-                    <p>
-
-                        Consulta enfermedades,
-                        padecimientos y otros
-                        inconvenientes biológicos
-                        que puedan afectar
-                        a los aventureros.
-
-                    </p>
-
-
-                    <span class="tool-button">
-
-                        CONSULTAR ARCHIVOS →
-
-                    </span>
-
-                </a>
-
-
-
-                <!-- =========================================
-                     HERRAMIENTA 5
-                ========================================== -->
-
-                <a
-                    href="tablero_economico_dm.html"
-                    class="tool-card"
-                    data-name="generador economia dinero oro comercio precios"
-                >
-
-                    <div class="tool-icon">
-                        💰
-                    </div>
-
-
-                    <h3>
-                        Ministerio de Economía Aventurera
-                    </h3>
-
-
-                    <p>
-
-                        Herramientas para gestionar
-                        economía, recursos y valores
-                        durante tus aventuras.
-
-                        <br><br>
-
-                        Porque derrotar al dragón
-                        es sencillo. Saber cuánto
-                        vale su tesoro es otro asunto.
-
-                    </p>
-
-
-                    <span class="tool-button">
-
-                        ACCEDER AL MINISTERIO →
-
-                    </span>
-
-                </a>
-
-
-            </div>
-
-        </section>
-
-
-
-        <!-- =================================================
-             AVISO
-        ================================================== -->
-
-        <section
-            class="notice"
-            id="aviso"
-        >
-
-            <h3>
-                ⚠️ AVISO OFICIAL DEL IMPERIO
-            </h3>
-
-
-            <p>
-
-                El Imperio no se responsabiliza por
-                resultados críticos, muertes accidentales,
-                maldiciones, deudas adquiridas durante
-                aventuras, dragones despertados ni
-                consecuencias derivadas del uso
-                irresponsable de estas herramientas.
-
-                <br><br>
-
-                El uso de estas herramientas es
-                completamente gratuito.
-
-            </p>
-
-        </section>
-
-    </main>
-
-
-
-    <!-- =====================================================
-         FOOTER
-    ====================================================== -->
-
-    <footer>
-
-        <p>
-
-            <strong>
-                Baúl de Herramientas D&D
-            </strong>
-
-            <br>
-
-            Herramientas gratuitas para jugadores
-            y Dungeon Masters.
-
-            <br><br>
-
-            Creado por
-            <strong>
-                MrConee
-            </strong>
-
-        </p>
-
-    </footer>
-
-
-
-    <!-- =====================================================
-         JAVASCRIPT
-    ====================================================== -->
-
-    <script>
-
-
-        /* =====================================================
-           BUSCADOR DE HERRAMIENTAS
-        ===================================================== */
-
-        const searchInput =
-            document.getElementById(
-                "searchInput"
-            );
-
-
-        const toolCards =
-            document.querySelectorAll(
-                ".tool-card"
-            );
-
-
-        searchInput.addEventListener(
-            "input",
-            function () {
-
-
-                const searchText =
-                    this.value
-                        .toLowerCase()
-                        .trim();
-
-
-                toolCards.forEach(
-                    function (card) {
-
-
-                        const toolName =
-                            card.dataset.name
-                                .toLowerCase();
-
-
-                        if (
-                            toolName.includes(
-                                searchText
-                            )
-                        ) {
-
-                            card.style.display =
-                                "flex";
-
-                        } else {
-
-                            card.style.display =
-                                "none";
-
-                        }
-
-                    }
-                );
-
-            }
-        );
-
-
-    </script>
-
-
-</body>
-</html>
+🎲 Que los dados estén de vuestro lado.
