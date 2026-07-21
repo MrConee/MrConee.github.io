@@ -1,29 +1,22 @@
+<!DOCTYPE html><html lang="es">
 # MrConee.github.io
 BaulDeHerramientasDnD
 
-<!DOCTYPE html>
-<html lang="es">
-<head>
+    <head>
     <meta charset="UTF-8">
-
     <meta
         name="viewport"
         content="width=device-width, initial-scale=1.0"
     >
-
     <meta
         name="description"
         content="Baúl de Herramientas D&D. Una colección gratuita de herramientas para jugadores y Dungeon Masters."
     >
-
     <title>Baúl Imperial de Herramientas D&D</title>
-
     <style>
-
         /* =====================================================
            CONFIGURACIÓN GENERAL
         ===================================================== */
-
         :root {
             --fondo: #11100e;
             --fondo-secundario: #1a1814;
@@ -982,7 +975,7 @@ BaulDeHerramientasDnD
                 ========================================== -->
 
                 <a
-                    href="administrador de combos_v4.htm"
+                    href="administrador de combos_v4.html"
                     class="tool-card"
                     data-name="gestor combate combate batalla"
                 >
